@@ -79,16 +79,10 @@ module.exports = {
         exclude: /node_modules/,
         use: [
           {
-            loader: "thread-loader"
-          },
-          {
             loader: "babel-loader"
           },
           {
-            loader: "ts-loader",
-            options: {
-              happyPackMode: true
-            }
+            loader: "ts-loader"
           }
         ]
       },
@@ -96,7 +90,6 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         use: [
-          "thread-loader",
           {
             loader: "babel-loader",
             options: {
