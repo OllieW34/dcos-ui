@@ -7,5 +7,6 @@ module.exports = {
   banner,
   tracking,
   oauth,
-  intercom
+  intercom,
+  "ui-update": require("./ui-update")
 };
