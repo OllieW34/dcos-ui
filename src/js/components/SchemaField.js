@@ -70,7 +70,7 @@ class SchemaField extends Component {
             type={"radio"}
             value={option}
             name={name}
-            checked={option === formData}
+            defaultChecked={option === formData}
             onChange={() => onChange(option)}
           />
           {option}
