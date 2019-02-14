@@ -1,13 +1,14 @@
-const React = require("react");
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { mount } from "enzyme";
 
 const TabView = require("../TabView");
 const TabViewList = require("../TabViewList");
 
+let thisInstance;
+
 describe("TabViewList", function() {
   it("returns content of first child if no activeTab is defined", function() {
-    this.instance = TestUtils.renderIntoDocument(
+    thisInstance = mount(
       <TabViewList>
         <TabView id="foo">foo</TabView>
         <TabView id="bar">bar</TabView>
@@ -15,12 +16,11 @@ describe("TabViewList", function() {
       </TabViewList>
     );
 
-    const node = ReactDOM.findDOMNode(this.instance);
-    expect(node.textContent).toEqual("foo");
+    expect(thisInstance.text()).toEqual("foo");
   });
 
   it("returns content of activeTab when defined", function() {
-    this.instance = TestUtils.renderIntoDocument(
+    thisInstance = mount(
       <TabViewList activeTab="bar">
         <TabView id="foo">foo</TabView>
         <TabView id="bar">bar</TabView>
@@ -28,7 +28,6 @@ describe("TabViewList", function() {
       </TabViewList>
     );
 
-    const node = ReactDOM.findDOMNode(this.instance);
-    expect(node.textContent).toEqual("bar");
+    expect(thisInstance.text()).toEqual("bar");
   });
 });

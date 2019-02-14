@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import PropTypes from "prop-types";
 import React from "react";
 import { Link } from "react-router";
@@ -72,7 +72,7 @@ class PodInstancesTable extends React.Component {
 
     if (
       Object.keys(checkedItems).length &&
-      !deepEqual(prevInstances, nextInstances)
+      !isEqual(prevInstances, nextInstances)
     ) {
       this.triggerSelectionChange(checkedItems, nextProps.instances);
     }
@@ -264,7 +264,8 @@ class PodInstancesTable extends React.Component {
         cpus: containerResources.cpus,
         mem: containerResources.mem,
         updated: container.getLastUpdated(),
-        version: ""
+        version: "",
+        isHistoricalInstance: container.isHistoricalInstance
       };
     });
 
@@ -305,7 +306,8 @@ class PodInstancesTable extends React.Component {
         updated: instance.getLastUpdated(),
         status: instance.getInstanceStatus(),
         version: podSpec.getVersion(),
-        children
+        children,
+        podSpec
       };
     });
   }
@@ -428,9 +430,33 @@ class PodInstancesTable extends React.Component {
   }
 
   renderColumnResource(prop, row, rowOptions = {}) {
+    let tooltipContent;
+    if (rowOptions.hasChildren) {
+      const executorResource =
+        row.podSpec && row.podSpec.executorResources
+          ? row.podSpec.executorResources[prop] || 0
+          : 0;
+      const childResources = row.children
+        .filter(child => !child.isHistoricalInstance)
+        .reduce((sum, current) => sum + (current[prop] || 0), 0);
+      tooltipContent = `Containers: ${Units.formatResource(
+        prop,
+        childResources
+      )}, Executor: ${Units.formatResource(prop, executorResource)}`;
+    } else {
+      const activeResource = row.isHistoricalInstance ? 0 : row[prop] || 0;
+      const totalResource = row[prop];
+      tooltipContent = `Using ${activeResource}/${Units.formatResource(
+        prop,
+        totalResource
+      )}`;
+    }
+
     return this.renderWithClickHandler(
       rowOptions,
-      <span>{Units.formatResource(prop, row[prop])}</span>
+      <Tooltip anchor="center" content={tooltipContent}>
+        <span>{Units.formatResource(prop, row[prop])}</span>
+      </Tooltip>
     );
   }
 

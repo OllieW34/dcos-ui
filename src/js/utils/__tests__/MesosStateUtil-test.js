@@ -5,6 +5,8 @@ const MesosStateUtil = require("../MesosStateUtil");
 
 const MESOS_STATE_WITH_HISTORY = require("./fixtures/MesosStateWithHistory");
 
+let thisInstance, thisMesosState, executorResources;
+
 describe("MesosStateUtil", function() {
   describe("#getFrameworkToServicesMap", function() {
     it("maps frameworks to services", function() {
@@ -19,98 +21,6 @@ describe("MesosStateUtil", function() {
         MesosStateUtil.getFrameworkToServicesMap(frameworks, serviceTree)
       ).toEqual({
         foo_1: fooFramework
-      });
-    });
-  });
-
-  describe("#flagMarathonTasks", function() {
-    it("returns state when frameworks is undefined", function() {
-      expect(MesosStateUtil.flagMarathonTasks({})).toEqual({});
-    });
-
-    it("returns state when there's no Marathon", function() {
-      const state = {
-        frameworks: [
-          {
-            name: "spark",
-            id: "spark_1"
-          }
-        ],
-        tasks: [
-          { name: "1", framework_id: "spark_1" },
-          { name: "2", framework_id: "spark_1" }
-        ]
-      };
-
-      expect(MesosStateUtil.flagMarathonTasks(state)).toEqual({
-        frameworks: [
-          {
-            name: "spark",
-            id: "spark_1"
-          }
-        ],
-        tasks: [
-          { name: "1", framework_id: "spark_1" },
-          { name: "2", framework_id: "spark_1" }
-        ]
-      });
-    });
-
-    it("assigns a isStartedByMarathon flag to all tasks", function() {
-      const state = {
-        frameworks: [
-          {
-            name: "marathon",
-            id: "marathon_1"
-          },
-          {
-            name: "spark",
-            id: "spark_1"
-          }
-        ],
-        tasks: [
-          { name: "spark", framework_id: "marathon_1", id: "spark.1" },
-          { name: "alpha", framework_id: "marathon_1", id: "alpha.1" },
-          { name: "alpha", framework_id: "marathon_1", id: "alpha.2" },
-          { name: "1", framework_id: "spark_1" },
-          { name: "2", framework_id: "spark_1" }
-        ]
-      };
-
-      expect(MesosStateUtil.flagMarathonTasks(state)).toEqual({
-        frameworks: [
-          {
-            name: "marathon",
-            id: "marathon_1"
-          },
-          {
-            name: "spark",
-            id: "spark_1"
-          }
-        ],
-        tasks: [
-          {
-            name: "spark",
-            id: "spark.1",
-            framework_id: "marathon_1",
-            isStartedByMarathon: true
-          },
-          {
-            name: "alpha",
-            id: "alpha.1",
-            framework_id: "marathon_1",
-            isStartedByMarathon: true
-          },
-          {
-            name: "alpha",
-            id: "alpha.2",
-            framework_id: "marathon_1",
-            isStartedByMarathon: true
-          },
-
-          { name: "1", framework_id: "spark_1", isStartedByMarathon: false },
-          { name: "2", framework_id: "spark_1", isStartedByMarathon: false }
-        ]
       });
     });
   });
@@ -148,7 +58,7 @@ describe("MesosStateUtil", function() {
 
   describe("#getRunningTasksFromVirtualNetworkName", function() {
     beforeEach(function() {
-      this.instance = MesosStateUtil.getRunningTasksFromVirtualNetworkName(
+      thisInstance = MesosStateUtil.getRunningTasksFromVirtualNetworkName(
         {
           frameworks: [
             { id: "foo" },
@@ -194,11 +104,11 @@ describe("MesosStateUtil", function() {
     });
 
     it("filters running tasks that doesn't have the overlay name", function() {
-      expect(this.instance.length).toEqual(1);
+      expect(thisInstance.length).toEqual(1);
     });
 
     it("finds running tasks from different frameworks", function() {
-      expect(this.instance).toEqual([
+      expect(thisInstance).toEqual([
         {
           state: "TASK_RUNNING",
           container: { network_infos: [{ name: "alpha" }] }
@@ -327,9 +237,80 @@ describe("MesosStateUtil", function() {
     });
   });
 
+  describe("#extractExecutorResources", function() {
+    beforeEach(function() {
+      executorResources = [
+        {
+          name: "cpus",
+          type: "SCALAR",
+          scalar: {
+            value: 0.1
+          }
+        },
+        {
+          name: "mem",
+          type: "SCALAR",
+          scalar: {
+            value: 32
+          }
+        },
+        {
+          name: "disk",
+          type: "SCALAR",
+          scalar: {
+            value: 256
+          }
+        }
+      ];
+    });
+
+    it("extracts resources from executor resource object", function() {
+      expect(
+        MesosStateUtil.extractExecutorResources(executorResources)
+      ).toEqual({
+        cpus: 0.1,
+        mem: 32,
+        disk: 256
+      });
+    });
+  });
+
   describe("#getHostResourcesByFramework", function() {
     beforeEach(function() {
-      this.mesosState = {
+      thisMesosState = {
+        executors: [
+          {
+            agent_id: {
+              value: "slave-uid"
+            },
+            name: "spark",
+            framework_id: "marathon_1",
+            id: "spark__1",
+            resources: [
+              {
+                name: "cpus",
+                type: "SCALAR",
+                scalar: {
+                  value: 0.5
+                }
+              },
+              {
+                name: "mem",
+                type: "SCALAR",
+                scalar: {
+                  value: 256
+                }
+              },
+              {
+                name: "disk",
+                type: "SCALAR",
+                scalar: {
+                  value: 100
+                }
+              }
+            ]
+          }
+        ],
         tasks: [
           {
             name: "spark",
@@ -365,13 +346,13 @@ describe("MesosStateUtil", function() {
 
     it("aggregates resources by framework", function() {
       expect(
-        MesosStateUtil.getHostResourcesByFramework(this.mesosState)
+        MesosStateUtil.getHostResourcesByFramework(thisMesosState)
       ).toEqual({
         "slave-uid": {
           marathon_1: {
-            cpus: 2,
-            mem: 256,
-            disk: 200
+            cpus: 2.5,
+            mem: 512,
+            disk: 300
           },
           marathon_2: {
             cpus: 0.5,
@@ -391,15 +372,15 @@ describe("MesosStateUtil", function() {
       const filteredFrameworks = ["marathon_2", "marathon_3"];
       expect(
         MesosStateUtil.getHostResourcesByFramework(
-          this.mesosState,
+          thisMesosState,
           filteredFrameworks
         )
       ).toEqual({
         "slave-uid": {
           marathon_1: {
-            cpus: 2,
-            mem: 256,
-            disk: 200
+            cpus: 2.5,
+            mem: 512,
+            disk: 300
           },
           other: {
             cpus: 1.5,
@@ -411,7 +392,7 @@ describe("MesosStateUtil", function() {
     });
 
     it("ignores tasks on termination states", function() {
-      this.mesosState.tasks.push({
+      thisMesosState.tasks.push({
         name: "spark",
         framework_id: "marathon_1",
         id: "spark.4",
@@ -420,13 +401,13 @@ describe("MesosStateUtil", function() {
         resources: { cpus: 1, mem: 128, disk: 100 }
       });
       expect(
-        MesosStateUtil.getHostResourcesByFramework(this.mesosState)
+        MesosStateUtil.getHostResourcesByFramework(thisMesosState)
       ).toEqual({
         "slave-uid": {
           marathon_1: {
-            cpus: 2,
-            mem: 256,
-            disk: 200
+            cpus: 2.5,
+            mem: 512,
+            disk: 300
           },
           marathon_2: {
             cpus: 0.5,
@@ -443,10 +424,10 @@ describe("MesosStateUtil", function() {
     });
 
     it("does not overwrite the resources of the original object", function() {
-      const previousMesosState = JSON.parse(JSON.stringify(this.mesosState));
-      MesosStateUtil.getHostResourcesByFramework(this.mesosState);
+      const previousMesosState = JSON.parse(JSON.stringify(thisMesosState));
+      MesosStateUtil.getHostResourcesByFramework(thisMesosState);
 
-      expect(this.mesosState).toEqual(previousMesosState);
+      expect(thisMesosState).toEqual(previousMesosState);
     });
   });
 });

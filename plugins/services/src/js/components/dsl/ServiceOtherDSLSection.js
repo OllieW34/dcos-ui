@@ -4,8 +4,7 @@ import React from "react";
 import DSLCombinerTypes from "#SRC/js/constants/DSLCombinerTypes";
 import DSLExpression from "#SRC/js/structs/DSLExpression";
 import DSLExpressionPart from "#SRC/js/structs/DSLExpressionPart";
-import DSLFormWithExpressionUpdates
-  from "#SRC/js/components/DSLFormWithExpressionUpdates";
+import DSLFormWithExpressionUpdates from "#SRC/js/components/DSLFormWithExpressionUpdates";
 import DSLUtil from "#SRC/js/utils/DSLUtil";
 import FieldInput from "#SRC/js/components/form/FieldInput";
 import FieldLabel from "#SRC/js/components/form/FieldLabel";
@@ -13,7 +12,7 @@ import FormGroup from "#SRC/js/components/form/FormGroup";
 
 const EXPRESSION_PARTS = {
   is_pod: DSLExpressionPart.attribute("is", "pod"),
-  is_package: DSLExpressionPart.attribute("is", "package"),
+  is_catalog: DSLExpressionPart.attribute("is", "catalog"),
   has_volumes: DSLExpressionPart.attribute("has", "volumes")
 };
 
@@ -32,22 +31,19 @@ class ServiceOtherDSLSection extends React.Component {
         onChange={onChange}
         parts={EXPRESSION_PARTS}
       >
-
         <label>Other</label>
         <div className="row">
           <div className="column-6">
             <FormGroup>
               <FieldLabel>
                 <FieldInput
-                  checked={data.is_package}
+                  checked={data.is_catalog}
                   disabled={!enabled}
-                  name="is_package"
+                  name="is_catalog"
                   type="checkbox"
                 />
                 Catalog
               </FieldLabel>
-            </FormGroup>
-            <FormGroup>
               <FieldLabel>
                 <FieldInput
                   checked={data.is_pod}

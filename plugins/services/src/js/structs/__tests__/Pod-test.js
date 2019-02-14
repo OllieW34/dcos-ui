@@ -1,4 +1,5 @@
 const Pod = require("../Pod");
+const PodInstance = require("../PodInstance");
 
 const HealthStatus = require("../../constants/HealthStatus");
 const PodFixture = require("../../../../../../tests/_fixtures/pods/PodFixture");
@@ -73,12 +74,45 @@ describe("Pod", function() {
     });
   });
 
+  describe("#getRegions", function() {
+    it("returns empty array for empty Pod object", function() {
+      const pod = new Pod();
+      expect(pod.getRegions()).toEqual([]);
+    });
+    it("returns correct region for one instance", function() {
+      const pod = new Pod({ instances: [{ agentRegion: "Region-1" }] });
+      expect(pod.getRegions()).toEqual(["Region-1"]);
+    });
+    it("returns correct region for multiple instance", function() {
+      const pod = new Pod({
+        instances: [
+          { agentRegion: "Region-1" },
+          { agentRegion: "Region-2" },
+          { agentRegion: "Region-1" }
+        ]
+      });
+      expect(pod.getRegions()).toEqual(["Region-1", "Region-2"]);
+    });
+  });
+
   describe("#getInstancesCount", function() {
     it("passes through from specs", function() {
       const pod = new Pod(PodFixture);
       expect(pod.getInstancesCount()).toEqual(
         pod.getSpec().getScalingInstances()
       );
+    });
+  });
+
+  describe("#getVersion", function() {
+    it("returns correct version", function() {
+      const pod = new Pod({
+        spec: {
+          version: "2016-03-22T10:46:07.354Z"
+        }
+      });
+
+      expect(pod.getVersion()).toEqual("2016-03-22T10:46:07.354Z");
     });
   });
 
@@ -379,6 +413,44 @@ describe("Pod", function() {
         tasksUnknown: 2,
         tasksOverCapacity: 1
       });
+    });
+  });
+
+  describe("#findInstanceByTaskId", function() {
+    it("returns PodInstance", function() {
+      const pod = new Pod({
+        instances: [
+          {
+            id: "foo_bar.53678488-2775-11e8-88a0-7abb83ecf42a"
+          }
+        ]
+      });
+
+      expect(
+        pod.findInstanceByTaskId(
+          "foo_bar.53678488-2775-11e8-88a0-7abb83ecf42a.container-1"
+        )
+      ).toEqual(
+        new PodInstance({
+          id: "foo_bar.53678488-2775-11e8-88a0-7abb83ecf42a"
+        })
+      );
+    });
+
+    it("returns undefined", function() {
+      const pod = new Pod({
+        instances: [
+          {
+            id: "foo.53678488-2775-11e8-88a0-7abb83ecf42a"
+          }
+        ]
+      });
+
+      expect(
+        pod.findInstanceByTaskId(
+          "unknown.53678488-2775-11e8-88a0-7abb83ecf42a.container-1"
+        )
+      ).toEqual(undefined);
     });
   });
 });

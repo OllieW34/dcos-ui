@@ -15,12 +15,11 @@ import ResourceTableUtil from "#SRC/js/utils/ResourceTableUtil";
 import TableUtil from "#SRC/js/utils/TableUtil";
 import Units from "#SRC/js/utils/Units";
 import { isSDKService } from "#SRC/js/utils/ServiceUtil";
-import ServiceStatusProgressBar
-  from "../../components/ServiceStatusProgressBar";
+import CompositeState from "#SRC/js/structs/CompositeState";
+import ServiceStatusProgressBar from "../../components/ServiceStatusProgressBar";
 import Pod from "../../structs/Pod";
 import Service from "../../structs/Service";
-import ServiceActionDisabledModal
-  from "../../components/modals/ServiceActionDisabledModal";
+import ServiceActionDisabledModal from "../../components/modals/ServiceActionDisabledModal";
 import {
   DELETE,
   EDIT,
@@ -45,11 +44,14 @@ const StatusMapping = {
 const columnClasses = {
   name: "service-table-column-name",
   status: "service-table-column-status",
+  version: "service-table-column-version",
+  regions: "service-table-column-regions",
   instances: "service-table-column-instances",
   cpus: "service-table-column-cpus",
   mem: "service-table-column-mem",
   disk: "service-table-column-disk",
-  actions: "service-table-column-actions"
+  actions: "service-table-column-actions",
+  gpus: "service-table-column-gpus"
 };
 
 const METHODS_TO_BIND = [
@@ -58,6 +60,7 @@ const METHODS_TO_BIND = [
   "handleActionDisabledModalOpen",
   "handleActionDisabledModalClose",
   "renderHeadline",
+  "renderRegions",
   "renderStats",
   "renderStatus",
   "renderServiceActions"
@@ -174,6 +177,7 @@ class ServicesTable extends React.Component {
     if (this.props.isFiltered) {
       return (
         <NestedServiceLinks
+          serviceLink={serviceLink}
           serviceID={id}
           className="service-breadcrumb"
           majorLinkClassName="service-breadcrumb-service-id"
@@ -236,6 +240,30 @@ class ServicesTable extends React.Component {
           {this.getOpenInNewWindowLink(service)}
         </span>
       </div>
+    );
+  }
+
+  renderRegions(prop, service) {
+    const localRegion = CompositeState.getMasterNode().getRegionName();
+    let regions = service.getRegions();
+
+    regions = regions.map(
+      region => (region === localRegion ? region + " (Local)" : region)
+    );
+
+    if (regions.length === 0) {
+      regions.push("N/A");
+    }
+
+    return (
+      <Tooltip
+        elementTag="span"
+        wrapperClassName="tooltip-wrapper tooltip-block-wrapper text-overflow"
+        wrapText={true}
+        content={regions.join(", ")}
+      >
+        {regions.join(", ")}
+      </Tooltip>
     );
   }
 
@@ -358,7 +386,11 @@ class ServicesTable extends React.Component {
     const serviceStatusClassSet = StatusMapping[serviceStatusText] || "";
     const instancesCount = service.getInstancesCount();
     const runningInstances = service.getRunningInstancesCount();
-    const tooltipContent = `${runningInstances} ${StringUtil.pluralize("instance", runningInstances)} running out of ${instancesCount}`;
+    const tooltipContent = `${runningInstances} ${StringUtil.pluralize(
+      "instance",
+      runningInstances
+    )} running out of ${instancesCount}`;
+    const hasStatusText = serviceStatusText !== ServiceStatus.NA.displayName;
 
     return (
       <div className="flex">
@@ -368,7 +400,9 @@ class ServicesTable extends React.Component {
             showTooltip={true}
             tooltipContent={tooltipContent}
           />
-          <span className="status-bar-text">{serviceStatusText}</span>
+          {hasStatusText && (
+            <span className="status-bar-text">{serviceStatusText}</span>
+          )}
         </div>
         <div className="service-status-progressbar-wrapper">
           <ServiceStatusProgressBar service={service} />
@@ -380,34 +414,49 @@ class ServicesTable extends React.Component {
   renderStats(prop, service) {
     const resource = service.getResources()[prop];
 
+    return <span>{Units.formatResource(prop, resource)}</span>;
+  }
+
+  renderVersion(prop, service) {
+    const version = ServiceTableUtil.getFormattedVersion(service);
+    if (!version) {
+      return null;
+    }
+
     return (
-      <span>
-        {Units.formatResource(prop, resource)}
-      </span>
+      <Tooltip
+        content={version.rawVersion}
+        wrapperClassName="tooltip-wrapper tooltip-block-wrapper text-overflow"
+        wrapText={true}
+      >
+        {version.displayVersion}
+      </Tooltip>
     );
   }
 
   renderInstances(prop, service) {
     const instancesCount = service.getInstancesCount();
     const runningInstances = service.getRunningInstancesCount();
-    const overview = runningInstances === instancesCount
-      ? ` ${runningInstances}`
-      : ` ${runningInstances}/${instancesCount}`;
+    const overview =
+      runningInstances === instancesCount
+        ? ` ${runningInstances}`
+        : ` ${runningInstances}/${instancesCount}`;
 
     const content = !Number.isInteger(instancesCount)
       ? EmptyStates.CONFIG_VALUE
       : overview;
     const tooltipContent = (
       <span>
-        {`${runningInstances} ${StringUtil.pluralize("instance", runningInstances)} running out of ${instancesCount}`}
+        {`${runningInstances} ${StringUtil.pluralize(
+          "instance",
+          runningInstances
+        )} running out of ${instancesCount}`}
       </span>
     );
 
     return (
       <Tooltip content={tooltipContent}>
-        <span>
-          {content}
-        </span>
+        <span>{content}</span>
       </Tooltip>
     );
   }
@@ -459,6 +508,24 @@ class ServicesTable extends React.Component {
       {
         className: this.getCellClasses,
         headerClassName: this.getCellClasses,
+        prop: "version",
+        render: this.renderVersion,
+        sortable: true,
+        sortFunction: ServiceTableUtil.propCompareFunctionFactory,
+        heading
+      },
+      {
+        className: this.getCellClasses,
+        headerClassName: this.getCellClasses,
+        prop: "regions",
+        render: this.renderRegions,
+        sortable: true,
+        sortFunction: ServiceTableUtil.propCompareFunctionFactory,
+        heading
+      },
+      {
+        className: this.getCellClasses,
+        headerClassName: this.getCellClasses,
         prop: "instances",
         render: this.renderInstances,
         sortable: true,
@@ -495,6 +562,15 @@ class ServicesTable extends React.Component {
       {
         className: this.getCellClasses,
         headerClassName: this.getCellClasses,
+        prop: "gpus",
+        render: this.renderStats,
+        sortable: true,
+        sortFunction: ServiceTableUtil.propCompareFunctionFactory,
+        heading
+      },
+      {
+        className: this.getCellClasses,
+        headerClassName: this.getCellClasses,
         prop: "actions",
         render: this.renderServiceActions,
         sortable: false,
@@ -510,10 +586,13 @@ class ServicesTable extends React.Component {
       <colgroup>
         <col className={columnClasses.name} />
         <col className={columnClasses.status} />
+        <col className={columnClasses.version} />
+        <col className={columnClasses.regions} />
         <col className={columnClasses.instances} />
         <col className={columnClasses.cpus} />
         <col className={columnClasses.mem} />
         <col className={columnClasses.disk} />
+        <col className={columnClasses.gpus} />
         <col className={columnClasses.actions} />
       </colgroup>
     );

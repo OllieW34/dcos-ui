@@ -7,16 +7,26 @@ import ServiceSpec from "./ServiceSpec";
 import VolumeList from "./VolumeList";
 
 module.exports = class Service extends Item {
+  constructor() {
+    super(...arguments);
+    this._regions = undefined;
+  }
   getId() {
     return this.get("id") || "";
   }
 
   getMesosId() {
-    return this.getId().split("/").slice(1).reverse().join(".");
+    return this.getId()
+      .split("/")
+      .slice(1)
+      .reverse()
+      .join(".");
   }
 
   getName() {
-    return this.getId().split("/").pop();
+    return this.getId()
+      .split("/")
+      .pop();
   }
 
   getSpec() {
@@ -48,6 +58,25 @@ module.exports = class Service extends Item {
     return ServiceStatus.NA;
   }
 
+  getRegions() {
+    if (!this._regions) {
+      const regionCounts = (this.get("tasks") || []).reduce(
+        (regions, { region }) => {
+          if (region) {
+            regions[region] = regions[region] ? regions[region] + 1 : 1;
+          }
+
+          return regions;
+        },
+        {}
+      );
+
+      this._regions = Object.keys(regionCounts).sort();
+    }
+
+    return this._regions;
+  }
+
   getImages() {
     return ServiceImages.NA_IMAGES;
   }
@@ -58,6 +87,10 @@ module.exports = class Service extends Item {
 
   getWebURL() {
     return null;
+  }
+
+  getVersion() {
+    return "";
   }
 
   getInstancesCount() {

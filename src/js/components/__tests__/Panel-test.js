@@ -1,16 +1,14 @@
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { shallow } from "enzyme";
 
 const Panel = require("../Panel");
 
+let thisOnClickSpy, thisInstance;
+
 describe("Panel", function() {
   beforeEach(function() {
-    this.onClickSpy = jasmine.createSpy("onClickSpy");
-    this.container = global.document.createElement("div");
-    this.instance = ReactDOM.render(
+    thisOnClickSpy = jasmine.createSpy("onClickSpy");
+    thisInstance = shallow(
       <Panel
         className="foo"
         contentClass="bar"
@@ -18,107 +16,71 @@ describe("Panel", function() {
         footerClass="qux"
         heading="heading"
         headingClass="norf"
-        onClick={this.onClickSpy}
+        onClick={thisOnClickSpy}
       >
         <div className="quis" />
-      </Panel>,
-      this.container
+      </Panel>
     );
-  });
-
-  afterEach(function() {
-    ReactDOM.unmountComponentAtNode(this.container);
   });
 
   describe("#render", function() {
     it("renders children", function() {
-      var child = TestUtils.findRenderedDOMComponentWithClass(
-        this.instance,
-        "quis"
-      );
-      expect(TestUtils.isDOMComponent(child)).toBe(true);
+      expect(thisInstance.find(".quis").exists()).toBe(true);
     });
 
     it("renders with given className", function() {
-      var panel = TestUtils.findRenderedComponentWithType(this.instance, Panel);
-      var node = ReactDOM.findDOMNode(panel);
-      expect(node.className).toContain("foo");
+      expect(thisInstance.prop("className")).toContain("foo");
     });
 
     it("overrides className to content node", function() {
-      var content = TestUtils.findRenderedDOMComponentWithClass(
-        this.instance,
-        "bar"
-      );
-      var node = ReactDOM.findDOMNode(content);
-      expect(node.className).toContain("bar");
+      expect(thisInstance.find(".bar").prop("className")).toContain("bar");
     });
 
     it("uses default className to content node", function() {
-      var content = TestUtils.findRenderedDOMComponentWithClass(
-        ReactDOM.render(<Panel />, this.container),
-        "panel-content"
-      );
-      var node = ReactDOM.findDOMNode(content);
-      expect(node.className).toContain("panel-content");
+      expect(
+        shallow(<Panel />)
+          .find(".panel-content")
+          .prop("className")
+      ).toContain("panel-content");
     });
 
     it("overrides className to footer node", function() {
-      var footer = TestUtils.findRenderedDOMComponentWithClass(
-        this.instance,
-        "bar"
-      );
-      var node = ReactDOM.findDOMNode(footer);
-      expect(node.className).toContain("bar");
+      expect(thisInstance.find(".bar").prop("className")).toContain("bar");
     });
 
     it("uses default className to footer node", function() {
-      var footer = TestUtils.findRenderedDOMComponentWithClass(
-        ReactDOM.render(<Panel footer="footer" />, this.container),
-        "panel-footer"
-      );
-      var node = ReactDOM.findDOMNode(footer);
-      expect(node.className).toContain("panel-footer");
+      expect(
+        shallow(<Panel footer="footer" />)
+          .find(".panel-footer")
+          .prop("className")
+      ).toContain("panel-footer");
     });
 
     it("does not render footer when none is given", function() {
-      var panel = ReactDOM.render(<Panel />, this.container);
-      expect(
-        TestUtils.scryRenderedDOMComponentsWithClass(panel, "panel-footer")
-          .length
-      ).toBe(0);
+      var panel = shallow(<Panel />);
+      expect(panel.find(".panel-footer").length).toBe(0);
     });
 
     it("overrides className to heading node", function() {
-      var heading = TestUtils.findRenderedDOMComponentWithClass(
-        this.instance,
-        "bar"
-      );
-      var node = ReactDOM.findDOMNode(heading);
-      expect(node.className).toContain("bar");
+      expect(thisInstance.find(".bar").prop("className")).toContain("bar");
     });
 
     it("uses default className to heading node", function() {
-      var heading = TestUtils.findRenderedDOMComponentWithClass(
-        ReactDOM.render(<Panel heading="heading" />, this.container),
-        "panel-header"
-      );
-      var node = ReactDOM.findDOMNode(heading);
-      expect(node.className).toContain("panel-header");
+      expect(
+        shallow(<Panel heading="heading" />)
+          .find(".panel-header")
+          .prop("className")
+      ).toContain("panel-header");
     });
 
     it("does not render heading when none is given", function() {
-      var panel = ReactDOM.render(<Panel />, this.container);
-      expect(
-        TestUtils.scryRenderedDOMComponentsWithClass(panel, "panel-header")
-          .length
-      ).toBe(0);
+      var panel = shallow(<Panel />);
+      expect(panel.find(".panel-header").length).toBe(0);
     });
 
     it("is able to add an onClick to the panel node", function() {
-      var panel = TestUtils.findRenderedComponentWithType(this.instance, Panel);
-      TestUtils.Simulate.click(ReactDOM.findDOMNode(panel));
-      expect(this.onClickSpy).toHaveBeenCalled();
+      thisInstance.simulate("click");
+      expect(thisOnClickSpy).toHaveBeenCalled();
     });
   });
 });

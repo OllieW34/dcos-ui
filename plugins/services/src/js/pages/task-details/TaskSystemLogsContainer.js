@@ -1,6 +1,6 @@
 import classNames from "classnames";
 import { Dropdown } from "reactjs-components";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import mixin from "reactjs-mixin";
 import PropTypes from "prop-types";
 import React from "react";
@@ -105,7 +105,7 @@ class TaskSystemLogsContainer extends mixin(StoreMixin) {
       stateToCheck.some(function(key) {
         return curState[key] !== nextState[key];
       }) ||
-      !deepEqual(curState.streams, nextState.streams)
+      !isEqual(curState.streams, nextState.streams)
     );
   }
 
@@ -353,11 +353,7 @@ class TaskSystemLogsContainer extends mixin(StoreMixin) {
   render() {
     const actions = [this.getActions(), this.getDownloadButton()];
 
-    return (
-      <SearchLog actions={actions}>
-        {this.getLogView()}
-      </SearchLog>
-    );
+    return <SearchLog actions={actions}>{this.getLogView()}</SearchLog>;
   }
 }
 

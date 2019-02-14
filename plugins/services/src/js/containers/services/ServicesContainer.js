@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React from "react";
 import { routerShape } from "react-router";
 
-import { DCOS_CHANGE, MESOS_STATE_CHANGE } from "#SRC/js/constants/EventTypes";
+import { DCOS_CHANGE } from "#SRC/js/constants/EventTypes";
 import { reconstructPathFromRoutes } from "#SRC/js/utils/RouterUtil";
 import AppDispatcher from "#SRC/js/events/AppDispatcher";
 import ContainerUtil from "#SRC/js/utils/ContainerUtil";
@@ -11,7 +11,6 @@ import DSLExpression from "#SRC/js/structs/DSLExpression";
 import DSLFilterList from "#SRC/js/structs/DSLFilterList";
 import Icon from "#SRC/js/components/Icon";
 import Loader from "#SRC/js/components/Loader";
-import MesosStateStore from "#SRC/js/stores/MesosStateStore";
 import Page from "#SRC/js/components/Page";
 import RequestErrorMsg from "#SRC/js/components/RequestErrorMsg";
 import {
@@ -26,17 +25,12 @@ import Pod from "../../structs/Pod";
 import PodDetail from "../pod-detail/PodDetail";
 import Service from "../../structs/Service";
 import ServiceActionItem from "../../constants/ServiceActionItem";
-import ServiceAttributeHasVolumesFilter
-  from "../../filters/ServiceAttributeHasVolumesFilter";
-import ServiceAttributeHealthFilter
-  from "../../filters/ServiceAttributeHealthFilter";
+import ServiceAttributeHasVolumesFilter from "../../filters/ServiceAttributeHasVolumesFilter";
+import ServiceAttributeHealthFilter from "../../filters/ServiceAttributeHealthFilter";
 import ServiceAttributeIsFilter from "../../filters/ServiceAttributeIsFilter";
-import ServiceAttributeIsPodFilter
-  from "../../filters/ServiceAttributeIsPodFilter";
-import ServiceAttributeIsCatalogFilter
-  from "../../filters/ServiceAttributeIsCatalogFilter";
-import ServiceAttributeNoHealthchecksFilter
-  from "../../filters/ServiceAttributeNoHealthchecksFilter";
+import ServiceAttributeIsPodFilter from "../../filters/ServiceAttributeIsPodFilter";
+import ServiceAttributeIsCatalogFilter from "../../filters/ServiceAttributeIsCatalogFilter";
+import ServiceAttributeNoHealthchecksFilter from "../../filters/ServiceAttributeNoHealthchecksFilter";
 import ServiceBreadcrumbs from "../../components/ServiceBreadcrumbs";
 import ServiceDetail from "../service-detail/ServiceDetail";
 import ServiceItemNotFound from "../../components/ServiceItemNotFound";
@@ -148,10 +142,6 @@ class ServicesContainer extends React.Component {
 
   componentDidMount() {
     DCOSStore.addChangeListener(DCOS_CHANGE, this.onStoreChange);
-
-    // Don't block the whole screen if Mesos state is not there
-    // Mesos state is needed to aggregate frameworks resources correctly
-    MesosStateStore.addChangeListener(MESOS_STATE_CHANGE, function() {});
 
     // Listen for server actions so we can update state immediately
     // on the completion of an API request.
@@ -325,15 +315,14 @@ class ServicesContainer extends React.Component {
 
   handleFilterExpressionChange(filterExpression) {
     const { router } = this.context;
-    const { location: { pathname } } = this.props;
+    const {
+      location: { pathname }
+    } = this.props;
     router.push({ pathname, query: { q: filterExpression.value } });
 
     this.setState({ filterExpression });
   }
 
-  fetchData() {
-    // Re-fetch data - this will end up being a single Relay request
-  }
   /**
    * Sets the actionType to pending in state which will in turn be pushed
    * to children components as a prop. Also clears any existing error for
@@ -378,11 +367,6 @@ class ServicesContainer extends React.Component {
         false
       )
     });
-
-    // Fetch new data if action was successful
-    if (!error) {
-      this.fetchData();
-    }
   }
 
   clearActionError(actionType) {
@@ -432,20 +416,53 @@ class ServicesContainer extends React.Component {
     };
   }
 
-  getModals(service) {
-    const modalProps = Object.assign({}, this.state.modal);
+  /**
+   * This function validates the current modalProps and returns
+   * them validated/corrected
+   *
+   * This function updates the `service` information from DCOSStore -
+   * if possible - or deletes the modal `id` from the object - if
+   * necessary (effectivly closes the modal, when the respective
+   * service got deleted)
+   *
+   * Depending on the current state `modalProps` need to contain either:
+   *
+   * - service and id ({ service: Service, id: String })
+   *   when the modal `id` is open or should be opened.
+   *  when opening the modal, `modalProps.service` is not yet set,
+   *  so we have to set it.
+   *
+   * - only a service ({ service: Service })
+   *   when no modal is open or the current modal is to be closed
+   *   reson is, that even if no modal is open, they are rendered into
+   *   the dom and need a valid service
+   *
+   * @param {object} props - an object which contains id and a service ("modalProps")
+   * @param {ServiceTree} [service] - service information
+   * @returns {object} updated and cleaned up modal information (props)
+   */
+  getCorrectedModalProps(props, service) {
+    const modalProps = Object.assign({}, props);
 
-    // This is needed to refresh the state of the service from the store once the
-    // modal is loaded. In our delete group modal for example we need feedback
-    // of the service while it is being deleted
-    if (!modalProps.service) {
+    if (!modalProps.service && service) {
       modalProps.service = service;
-    } else {
+    }
+
+    if (
+      modalProps.service &&
+      DCOSStore.serviceTree.findItemById(modalProps.service.id)
+    ) {
       modalProps.service = DCOSStore.serviceTree.findItemById(
         modalProps.service.id
       );
+    } else if (modalProps.id) {
+      delete modalProps.id;
     }
 
+    return modalProps;
+  }
+
+  getModals(service) {
     return (
       <ServiceModals
         actions={this.getActions()}
@@ -453,7 +470,7 @@ class ServicesContainer extends React.Component {
         clearError={this.clearActionError}
         onClose={this.handleModalClose}
         pendingActions={this.state.pendingActions}
-        modalProps={modalProps}
+        modalProps={this.getCorrectedModalProps(this.state.modal, service)}
       />
     );
   }
@@ -572,9 +589,10 @@ class ServicesContainer extends React.Component {
     }
 
     // Find item in root tree
-    const item = itemId === "/"
-      ? DCOSStore.serviceTree
-      : DCOSStore.serviceTree.findItemById(itemId);
+    const item =
+      itemId === "/"
+        ? DCOSStore.serviceTree
+        : DCOSStore.serviceTree.findItemById(itemId);
 
     // Show Tree
     const currentRoutePath = reconstructPathFromRoutes(routes);

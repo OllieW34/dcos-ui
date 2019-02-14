@@ -4,8 +4,7 @@ import Batch from "#SRC/js/structs/Batch";
 
 import FieldLabel from "#SRC/js/components/form/FieldLabel";
 import FieldError from "#SRC/js/components/form/FieldError";
-import PlacementConstraintsPartial
-  from "#SRC/js/components/PlacementConstraintsPartial";
+import PlacementConstraintsPartial from "#SRC/js/components/PlacementConstraintsPartial";
 import BatchContainer from "#SRC/js/components/BatchContainer";
 import DataValidatorUtil from "#SRC/js/utils/DataValidatorUtil";
 import { Tooltip } from "reactjs-components";
@@ -15,37 +14,28 @@ import {
   JSONParser
 } from "#PLUGINS/services/src/js/reducers/serviceForm/JSONReducers/Constraints";
 import { combineReducers } from "#SRC/js/utils/ReducerUtil";
-import {
-  FormReducer
-} from "#PLUGINS/services/src/js/reducers/serviceForm/FormReducers/Constraints";
-import CreateServiceModalFormUtil
-  from "#PLUGINS/services/src/js/utils/CreateServiceModalFormUtil";
-import MarathonAppValidators
-  from "#PLUGINS/services/src/js/validators/MarathonAppValidators";
+import { FormReducer } from "#PLUGINS/services/src/js/reducers/serviceForm/FormReducers/Constraints";
+import CreateServiceModalFormUtil from "#PLUGINS/services/src/js/utils/CreateServiceModalFormUtil";
+import MarathonAppValidators from "#PLUGINS/services/src/js/validators/MarathonAppValidators";
 
-import PlacementValidators
-  from "#PLUGINS/services/src/js/validators/PlacementsValidators";
+import PlacementValidators from "#PLUGINS/services/src/js/validators/PlacementsValidators";
 
 const jsonReducer = combineReducers({ constraints: JSONReducer });
 
 const JsonField = props => (
   <div>
-    <FieldLabel>
-      {props.label}
-    </FieldLabel>
-    <pre>
-      {JSON.stringify(props.json, props.replacer, props.space)}
-    </pre>
+    <FieldLabel>{props.label}</FieldLabel>
+    <pre>{JSON.stringify(props.json, props.replacer, props.space)}</pre>
     <FieldError>Unable to edit {props.fieldName}</FieldError>
   </div>
 );
 
 JsonField.propTypes = {
-  fieldName: React.PropTypes.string.isRequired,
-  label: React.PropTypes.string.isRequired,
-  json: React.PropTypes.object.isRequired,
-  replacer: React.PropTypes.func,
-  space: React.PropTypes.number
+  fieldName: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  json: PropTypes.object.isRequired,
+  replacer: PropTypes.func,
+  space: PropTypes.number
 };
 
 JsonField.defaultProps = {

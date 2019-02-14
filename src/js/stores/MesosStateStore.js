@@ -15,11 +15,20 @@ import {
 } from "../constants/EventTypes";
 import MesosStateUtil from "../utils/MesosStateUtil";
 import pipe from "../utils/pipe";
+import { linearBackoff } from "../utils/rxjsUtils";
 import { MesosStreamType } from "../core/MesosStream";
 import container from "../container";
 import * as mesosStreamParsers from "./MesosStream/parsers";
 
-const METHODS_TO_BIND = ["setState", "onStreamData", "onStreamError"];
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 500;
+const MAX_RETRY_DELAY = 5000;
+const METHODS_TO_BIND = [
+  "setState",
+  "setMaster",
+  "onStreamData",
+  "onStreamError"
+];
 
 class MesosStateStore extends GetSetBaseStore {
   constructor() {
@@ -70,7 +79,15 @@ class MesosStateStore extends GetSetBaseStore {
     const getMasterRequest = request(
       { type: "GET_MASTER" },
       "/mesos/api/v1?get_master"
-    ).retry(3);
+    )
+      .retryWhen(linearBackoff(RETRY_DELAY, MAX_RETRIES))
+      .do(response => {
+        const master = mesosStreamParsers.getMaster(
+          this.getMaster(),
+          JSON.parse(response)
+        );
+        this.setMaster(master);
+      });
 
     const parsers = pipe(...Object.values(mesosStreamParsers));
     const dataStream = mesosStream
@@ -95,14 +112,19 @@ class MesosStateStore extends GetSetBaseStore {
     // Since we introduced the fake event above, we have to guarantee certain
     // refresh limits to the UI. They are:
     //
-    // MOST once every (Config.getRefreshRate() * 0.5) ms. due to debounceTime.
-    // LEAST once every tick of Config.getRefreshRate() ms in Observable.interval
+    // MOST once every (Config.getRefreshRate() * 0.5) ms. due to sampleTime.
+    // LEAST once every tick of Config.getRefreshRate() ms in
+    // Observable.interval
     //
     // TODO: https://jira.mesosphere.com/browse/DCOS-18277
     this.stream = waitStream
       .concat(eventTriggerStream)
-      .debounceTime(Config.getRefreshRate() * 0.5)
-      .subscribe(this.onStreamData, this.onStreamError);
+      .sampleTime(Config.getRefreshRate() * 0.5)
+      .retryWhen(linearBackoff(RETRY_DELAY, -1, MAX_RETRY_DELAY))
+      .subscribe(
+        () => Promise.resolve().then(this.onStreamData),
+        this.onStreamError
+      );
   }
 
   getLastMesosState() {
@@ -115,6 +137,15 @@ class MesosStateStore extends GetSetBaseStore {
         tasks: []
       },
       this.get("lastMesosState")
+    );
+  }
+
+  getMaster() {
+    return Object.assign(
+      {
+        master_info: {}
+      },
+      this.get("master")
     );
   }
 
@@ -171,7 +202,6 @@ class MesosStateStore extends GetSetBaseStore {
   getTasksFromNodeID(nodeID) {
     const { tasks, frameworks } = this.getLastMesosState();
 
-    const schedulerTasks = this.getSchedulerTasks();
     const servicesMap = MesosStateUtil.getFrameworkToServicesMap(
       frameworks,
       DCOSStore.serviceTree
@@ -179,9 +209,6 @@ class MesosStateStore extends GetSetBaseStore {
 
     return tasks
       .filter(({ slave_id }) => slave_id === nodeID)
-      .map(task =>
-        MesosStateUtil.assignSchedulerTaskField(task, schedulerTasks)
-      )
       .map(task =>
         MesosStateUtil.flagSDKTask(task, servicesMap[task.framework_id])
       );
@@ -198,43 +225,6 @@ class MesosStateStore extends GetSetBaseStore {
     return new Task(task);
   }
 
-  /**
-   * @return {Array} list of scheduler tasks
-   */
-  getSchedulerTasks() {
-    const tasks = this.getTasksFromServiceName("marathon");
-
-    return tasks.filter(({ isSchedulerTask }) => isSchedulerTask);
-  }
-
-  getSchedulerTaskFromServiceName(serviceName) {
-    const tasks = this.getSchedulerTasks();
-
-    return tasks.find(function({ labels }) {
-      return labels.some(({ key, value }) => {
-        return key === "DCOS_PACKAGE_FRAMEWORK_NAME" && value === serviceName;
-      });
-    });
-  }
-
-  getTasksFromServiceName(serviceName) {
-    const { tasks, frameworks } = this.getLastMesosState();
-
-    if (!frameworks) {
-      return null;
-    }
-
-    const framework = frameworks.find(function(framework) {
-      return framework.active && framework.name === serviceName;
-    });
-
-    if (framework) {
-      return tasks.filter(({ framework_id }) => framework_id === framework.id);
-    }
-
-    return [];
-  }
-
   getTasksByService(service) {
     const { frameworks, tasks = [] } = this.getLastMesosState();
     const serviceName = service.getName();
@@ -246,7 +236,6 @@ class MesosStateStore extends GetSetBaseStore {
       return [];
     }
 
-    const schedulerTasks = this.getSchedulerTasks();
     const serviceIsFramework = service && service instanceof Framework;
     const serviceFrameworkName = serviceIsFramework
       ? service.getFrameworkName()
@@ -269,9 +258,6 @@ class MesosStateStore extends GetSetBaseStore {
     return tasks
       .filter(task => task.isStartedByMarathon && task.name === mesosTaskName)
       .concat(serviceTasks)
-      .map(task =>
-        MesosStateUtil.assignSchedulerTaskField(task, schedulerTasks)
-      )
       .map(task => MesosStateUtil.flagSDKTask(task, service));
   }
 
@@ -285,6 +271,12 @@ class MesosStateStore extends GetSetBaseStore {
   setState(state) {
     this.set({
       lastMesosState: state
+    });
+  }
+
+  setMaster(master) {
+    this.set({
+      master
     });
   }
 

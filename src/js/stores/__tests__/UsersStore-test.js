@@ -5,24 +5,26 @@ const AppDispatcher = require("../../events/AppDispatcher");
 const ActionTypes = require("../../constants/ActionTypes");
 const EventTypes = require("../../constants/EventTypes");
 const UsersList = require("../../structs/UsersList");
-const Config = require("../../config/Config");
+const Config = require("#SRC/js/config/Config").default;
 
-const usersFixture = require("../../../../tests/_fixtures/acl/users-unicode.json");
+const usersFixture = require("./fixtures/users-unicode.json");
+
+let thisRequestFn, thisUsersFixture, thisUseFixtures;
 
 describe("UsersStore", function() {
   beforeEach(function() {
-    this.requestFn = RequestUtil.json;
+    thisRequestFn = RequestUtil.json;
     RequestUtil.json = function(handlers) {
       handlers.success(usersFixture);
     };
-    this.usersFixture = Object.assign({}, usersFixture);
-    this.useFixtures = Config.useFixtures;
+    thisUsersFixture = Object.assign({}, usersFixture);
+    thisUseFixtures = Config.useFixtures;
     Config.useFixtures = true;
   });
 
   afterEach(function() {
-    RequestUtil.json = this.requestFn;
-    Config.useFixtures = this.useFixtures;
+    RequestUtil.json = thisRequestFn;
+    Config.useFixtures = thisUseFixtures;
   });
 
   it("returns an instance of UsersList", function() {
@@ -34,7 +36,7 @@ describe("UsersStore", function() {
   it("returns all of the users it was given", function() {
     UsersStore.fetchUsers();
     var users = UsersStore.getUsers().getItems();
-    expect(users.length).toEqual(this.usersFixture.array.length);
+    expect(users.length).toEqual(thisUsersFixture.array.length);
   });
 
   describe("dispatcher", function() {

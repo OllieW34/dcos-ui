@@ -1,14 +1,15 @@
+import React from "react";
+import { mount } from "enzyme";
+
 const JestUtil = require("#SRC/js/utils/JestUtil");
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const TestUtils = require("react-addons-test-utils");
 
 const PodInstancesTable = require("../PodInstancesTable");
 const Pod = require("../../../structs/Pod");
 const Util = require("#SRC/js/utils/Util");
 
 const PodFixture = require("../../../../../../../tests/_fixtures/pods/PodFixture");
+
+let thisInstance;
 
 describe("PodInstancesTable", function() {
   // Fix the dates in order to test the relative date field
@@ -81,7 +82,7 @@ describe("PodInstancesTable", function() {
 
     describe("collapsed table", function() {
       beforeEach(function() {
-        this.instance = TestUtils.renderIntoDocument(
+        thisInstance = mount(
           <PodInstancesTable
             pod={pod}
             instances={pod.getInstanceList().getItems()}
@@ -90,109 +91,98 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the name column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        ).reduce(
-          JestUtil.reduceTextContentOfSelector(
-            ".collapsing-string-full-string"
-          ),
-          []
-        );
+        const names = thisInstance
+          .find(".task-table-column-primary .collapsing-string-full-string")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["instance-1", "instance-2", "instance-3"]);
       });
 
       it("renders the address column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-host-address"
-        ).reduce(
-          JestUtil.reduceTextContentOfSelector(
-            ".collapsing-string-full-string"
-          ),
-          []
-        );
+        const names = thisInstance
+          .find(
+            ".task-table-column-host-address .collapsing-string-full-string"
+          )
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["agent-1", "agent-2", "agent-3"]);
       });
 
       it("renders the region column", function() {
-        var regions = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-region"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const regions = thisInstance
+          .find("td.task-table-column-region")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(regions).toEqual(["N/A", "N/A", "N/A"]);
       });
 
       it("renders the zone column", function() {
-        var zones = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-zone"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const zones = thisInstance
+          .find("td.task-table-column-zone")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(zones).toEqual(["N/A", "N/A", "N/A"]);
       });
 
       it("renders the status column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-status"
-        ).reduce(JestUtil.reduceTextContentOfSelector(".status-text"), []);
+        const names = thisInstance
+          .find(".task-table-column-status .status-text")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["Running", "Running", "Staging"]);
       });
 
       it("renders the cpu column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-cpus"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const names = thisInstance
+          .find("td.task-table-column-cpus")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["1", "1", "1"]);
       });
 
       it("renders the mem column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-mem"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const names = thisInstance
+          .find("td.task-table-column-mem")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["128 MiB", "128 MiB", "128 MiB"]);
       });
 
       it("renders the updated column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-updated"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const names = thisInstance
+          .find("td.task-table-column-updated")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["a day ago", "7 days ago", "13 days ago"]);
       });
 
       it("renders the version column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-version"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const names = thisInstance
+          .find("td.task-table-column-version")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual([
-          "8/29/2016, 3:01:01 AM",
-          "8/29/2016, 3:01:01 AM",
-          "8/29/2016, 3:01:01 AM"
+          new Date(PodFixture.spec.version).toLocaleString(),
+          new Date(PodFixture.spec.version).toLocaleString(),
+          new Date(PodFixture.spec.version).toLocaleString()
         ]);
       });
     });
@@ -207,26 +197,21 @@ describe("PodInstancesTable", function() {
           { instances: pod.getInstanceList().getItems() },
           { service: pod }
         );
-        this.instance = TestUtils.renderIntoDocument(component);
+        thisInstance = mount(component);
 
         // 1 click on the header (ascending)
-        const columnHeader = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        )[0];
-        TestUtils.Simulate.click(columnHeader);
+        thisInstance
+          .find(".task-table-column-primary")
+          .at(0)
+          .simulate("click");
       });
 
       it("sorts the name column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        ).reduce(
-          JestUtil.reduceTextContentOfSelector(
-            ".collapsing-string-full-string"
-          ),
-          []
-        );
+        const names = thisInstance
+          .find(".task-table-column-primary .collapsing-string-full-string")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["instance-1", "instance-2", "instance-3"]);
       });
@@ -242,27 +227,21 @@ describe("PodInstancesTable", function() {
           { instances: pod.getInstanceList().getItems() },
           { service: pod }
         );
-        this.instance = TestUtils.renderIntoDocument(component);
+        thisInstance = mount(component);
 
         // 2 clicks on the header (descending)
-        const columnHeader = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        )[0];
-        TestUtils.Simulate.click(columnHeader);
-        TestUtils.Simulate.click(columnHeader);
+        const columnHeader = thisInstance
+          .find(".task-table-column-primary")
+          .at(0);
+        columnHeader.simulate("click").simulate("click");
       });
 
       it("sorts the name column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        ).reduce(
-          JestUtil.reduceTextContentOfSelector(
-            ".collapsing-string-full-string"
-          ),
-          []
-        );
+        const names = thisInstance
+          .find(".task-table-column-primary .collapsing-string-full-string")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual(["instance-3", "instance-2", "instance-1"]);
       });
@@ -278,30 +257,22 @@ describe("PodInstancesTable", function() {
           { instances: pod.getInstanceList().getItems() },
           { service: pod }
         );
-        this.instance = TestUtils.renderIntoDocument(component);
+        thisInstance = mount(component);
 
         // Expand all table rows by clicking on each one of them
-        TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        ).forEach(function(element) {
-          const target = element.querySelector(".is-expandable");
-          if (target) {
-            TestUtils.Simulate.click(target);
-          }
-        });
+        thisInstance
+          .find(".task-table-column-primary .is-expandable")
+          .forEach(function(el) {
+            el.simulate("click");
+          });
       });
 
       it("renders the name column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-primary"
-        ).reduce(
-          JestUtil.reduceTextContentOfSelector(
-            ".collapsing-string-full-string"
-          ),
-          []
-        );
+        const names = thisInstance
+          .find(".task-table-column-primary .collapsing-string-full-string")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual([
           "instance-1",
@@ -317,22 +288,20 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the address column", function() {
-        var columns = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-host-address"
-        );
-        const agents = columns.reduce(
-          JestUtil.reduceTextContentOfSelector(
-            ".collapsing-string-full-string"
-          ),
-          []
-        );
-        const ports = columns.reduce(
-          JestUtil.reduceTextContentOfSelector(
-            "a:not(.table-cell-link-secondary)"
-          ),
-          []
-        );
+        const columns = thisInstance.find(".task-table-column-host-address");
+        const agents = columns
+          .find(".collapsing-string-full-string")
+          .map(function(el) {
+            return el.text();
+          });
+        const ports = columns
+          .find("a")
+          .filterWhere(function(el) {
+            return !el.hasClass("table-cell-link-secondary");
+          })
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(agents).toEqual(["agent-1", "agent-2", "agent-3"]);
         expect(ports).toEqual([
@@ -346,11 +315,11 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the status column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-status"
-        ).reduce(JestUtil.reduceTextContentOfSelector(".status-text"), []);
-
+        const names = thisInstance
+          .find(".task-table-column-status .status-text")
+          .map(function(el) {
+            return el.text();
+          });
         expect(names).toEqual([
           "Running",
           "Running",
@@ -365,12 +334,11 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the cpu column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-cpus"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .reduce(JestUtil.reduceTextContentOfSelector("div > div > span"), []);
+        const names = thisInstance
+          .find("td.task-table-column-cpus div.tooltip-wrapper > span")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual([
           "1",
@@ -386,12 +354,11 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the mem column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-mem"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .reduce(JestUtil.reduceTextContentOfSelector("div > div > span"), []);
+        const names = thisInstance
+          .find("td.task-table-column-mem div.tooltip-wrapper > span")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual([
           "128 MiB",
@@ -407,12 +374,11 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the updated column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-updated"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .reduce(JestUtil.reduceTextContentOfSelector("time"), []);
+        const names = thisInstance
+          .find("td.task-table-column-updated time")
+          .map(function(el) {
+            return el.text();
+          });
 
         expect(names).toEqual([
           "a day ago",
@@ -428,17 +394,16 @@ describe("PodInstancesTable", function() {
       });
 
       it("renders the version column", function() {
-        var names = TestUtils.scryRenderedDOMComponentsWithClass(
-          this.instance,
-          "task-table-column-version"
-        )
-          .filter(JestUtil.filterByTagName("TD"))
-          .map(JestUtil.mapTextContent);
+        const names = thisInstance
+          .find("td.task-table-column-version")
+          .map(function(el) {
+            return el.text().trim();
+          });
 
         expect(names).toEqual([
-          "8/29/2016, 3:01:01 AM",
-          "8/29/2016, 3:01:01 AM",
-          "8/29/2016, 3:01:01 AM"
+          new Date(PodFixture.spec.version).toLocaleString(),
+          new Date(PodFixture.spec.version).toLocaleString(),
+          new Date(PodFixture.spec.version).toLocaleString()
         ]);
       });
     });

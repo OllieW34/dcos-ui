@@ -4,6 +4,7 @@ import { SERVER_ACTION } from "#SRC/js/constants/ActionTypes";
 import AppDispatcher from "#SRC/js/events/AppDispatcher";
 import CompositeState from "#SRC/js/structs/CompositeState";
 import Config from "#SRC/js/config/Config";
+import CosmosPackagesStore from "#SRC/js/stores/CosmosPackagesStore";
 import GetSetBaseStore from "#SRC/js/stores/GetSetBaseStore";
 import VisibilityStore from "#SRC/js/stores/VisibilityStore";
 
@@ -85,6 +86,8 @@ import {
 import Framework from "../structs/Framework";
 import ServiceImages from "../constants/ServiceImages";
 import ServiceTree from "../structs/ServiceTree";
+
+import ServiceValidatorUtil from "../utils/ServiceValidatorUtil";
 
 let requestInterval = null;
 let shouldEmbedLastUnusedOffers = false;
@@ -226,6 +229,7 @@ class MarathonStore extends GetSetBaseStore {
           this.emit(MARATHON_SERVICE_RESTART_SUCCESS);
           break;
         case REQUEST_MARATHON_GROUPS_SUCCESS:
+          this.injectGroupsWithPackageImages(action.data);
           this.processMarathonGroups(action.data);
           break;
         case REQUEST_MARATHON_DEPLOYMENTS_SUCCESS:
@@ -461,6 +465,18 @@ class MarathonStore extends GetSetBaseStore {
 
   getServiceFromName(name) {
     return this.get("apps")[name];
+  }
+
+  injectGroupsWithPackageImages(data) {
+    data.items.forEach(item => {
+      if (item.items && Array.isArray(item.items)) {
+        this.injectGroupsWithPackageImages(item);
+      } else if (ServiceValidatorUtil.isFrameworkResponse(item)) {
+        item["images"] = CosmosPackagesStore.getPackageImages()[
+          item.labels.DCOS_PACKAGE_NAME
+        ];
+      }
+    });
   }
 
   processMarathonInfoRequest(info) {

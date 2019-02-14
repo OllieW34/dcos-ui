@@ -40,7 +40,7 @@ const DateUtil = {
    * @return {String} time string with the format 'MM-DD-YYYY [at] h:mma'
    */
   msToDateStr(ms) {
-    return moment(ms).format("MM-DD-YYYY [at] h:mma");
+    return moment(ms).format("MMMM Do, YYYY h:mm a");
   },
 
   /**
@@ -49,7 +49,9 @@ const DateUtil = {
    * @return {String} time string with the format 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]'
    */
   msToUTCDate(ms) {
-    return moment(ms).utc().format("YYYY-MM-DD[T]HH:mm:ss.SSS[Z]");
+    return moment(ms)
+      .utc()
+      .format("YYYY-MM-DD[T]HH:mm:ss.SSS[Z]");
   },
 
   /**
@@ -58,7 +60,9 @@ const DateUtil = {
    * @return {String} time string with the format 'YYYY-MM-DD hh:mm:ss'
    */
   msToLogTime(ms) {
-    return moment(ms).utc().format("YYYY-MM-DD hh:mm:ss");
+    return moment(ms)
+      .utc()
+      .format("YYYY-MM-DD hh:mm:ss");
   },
 
   /**
@@ -77,7 +81,9 @@ const DateUtil = {
       return null;
     }
 
-    return moment(str).valueOf();
+    return (
+      moment(str).valueOf() || moment(str, "YYYY-MM-DDTHH:mm:ssZ").valueOf()
+    );
   },
 
   getDuration(time, formatKey = "seconds") {

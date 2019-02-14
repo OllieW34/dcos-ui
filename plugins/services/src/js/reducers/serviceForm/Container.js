@@ -133,14 +133,6 @@ const containerJSONReducer = combineReducers({
     // Store the change no matter what network type we have
     this.portDefinitions = PortMappingsReducer(this.portDefinitions, action);
 
-    // Mesos Runtime does not support portMappings for CONTAINER network
-    if (
-      this.containerType !== DOCKER &&
-      this.appState.networkType === CONTAINER
-    ) {
-      return null;
-    }
-
     // We only want portMappings for networks of type BRIDGE or CONTAINER
     if (
       this.appState.networkType !== BRIDGE &&
@@ -151,7 +143,8 @@ const containerJSONReducer = combineReducers({
 
     // Convert portDefinitions to portMappings
     return this.portDefinitions.map((portDefinition, index) => {
-      const vipLabel = `VIP_${index}`;
+      const vipLabel =
+        portDefinition.vipLabel || VipLabelUtil.defaultVip(index);
       const vipPort = Number(portDefinition.vipPort) || null;
       const containerPort = Number(portDefinition.containerPort) || 0;
       const servicePort = parseInt(portDefinition.servicePort, 10) || null;

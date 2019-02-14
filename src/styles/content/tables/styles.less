@@ -1,13 +1,16 @@
+.table-wrapper {
+  flex-grow: 1;
+
+  .table-cell-link-primary {
+    color: @grey-dark;
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+
 & when (@table-enabled) {
 
   .table {
-
-    &.table-header-nowrap {
-
-      th {
-        white-space: nowrap;
-      }
-    }
 
     &.table-hide-header {
 
@@ -99,6 +102,10 @@
           }
         }
       }
+    }
+
+    td.wrap-content {
+      white-space: normal;
     }
 
     th,
@@ -430,3 +437,8 @@
     }
   }
 }
+
+.table-content-spacing-left {
+  margin-left: @table-cell-content-margin-horizontal;
+}
+

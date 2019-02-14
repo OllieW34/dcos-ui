@@ -1,8 +1,7 @@
 import React, { Component } from "react";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import { Tooltip } from "reactjs-components";
-import DefaultSchemaField
-  from "react-jsonschema-form/lib/components/fields/SchemaField";
+import DefaultSchemaField from "react-jsonschema-form/lib/components/fields/SchemaField";
 import { MountService } from "foundation-ui";
 import StringUtil from "#SRC/js/utils/StringUtil";
 
@@ -10,8 +9,7 @@ import Icon from "#SRC/js/components/Icon";
 import FieldInput from "#SRC/js/components/form/FieldInput";
 import FieldLabel from "#SRC/js/components/form/FieldLabel";
 import FormGroup from "#SRC/js/components/form/FormGroup";
-import FormGroupHeadingContent
-  from "#SRC/js/components/form/FormGroupHeadingContent";
+import FormGroupHeadingContent from "#SRC/js/components/form/FormGroupHeadingContent";
 import FormGroupHeading from "#SRC/js/components/form/FormGroupHeading";
 import FieldError from "#SRC/js/components/form/FieldError";
 import FieldSelect from "#SRC/js/components/form/FieldSelect";
@@ -20,18 +18,10 @@ import FieldAutofocus from "#SRC/js/components/form/FieldAutofocus";
 class SchemaField extends Component {
   shouldComponentUpdate(nextProps) {
     return (
-      !deepEqual(nextProps.formData, this.props.formData, { strict: true }) ||
-      !deepEqual(nextProps.uiSchema, this.props.uiSchema)
+      !isEqual(nextProps.formData, this.props.formData) ||
+      !isEqual(nextProps.uiSchema, this.props.uiSchema) ||
+      !isEqual(nextProps.errorSchema, this.props.errorSchema)
     );
-  }
-
-  componentDidUpdate(prevProps) {
-    if (
-      prevProps.schema.type !== "object" &&
-      prevProps.formData !== this.props.formData
-    ) {
-      this.props.onChange(this.props.formData);
-    }
   }
 
   componentDidMount() {
@@ -100,7 +90,11 @@ class SchemaField extends Component {
     } = props;
 
     const options = schema.enum.map(option => {
-      return <option key={option} value={option}>{option}</option>;
+      return (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      );
     });
 
     let field = (
@@ -119,11 +113,7 @@ class SchemaField extends Component {
       </FieldSelect>
     );
     if (autofocus) {
-      field = (
-        <FieldAutofocus>
-          {field}
-        </FieldAutofocus>
-      );
+      field = <FieldAutofocus>{field}</FieldAutofocus>;
     }
 
     return (
@@ -172,11 +162,7 @@ class SchemaField extends Component {
       />
     );
     if (autofocus) {
-      field = (
-        <FieldAutofocus>
-          {field}
-        </FieldAutofocus>
-      );
+      field = <FieldAutofocus>{field}</FieldAutofocus>;
     }
 
     return (
@@ -227,11 +213,7 @@ class SchemaField extends Component {
       />
     );
     if (autofocus) {
-      field = (
-        <FieldAutofocus>
-          {field}
-        </FieldAutofocus>
-      );
+      field = <FieldAutofocus>{field}</FieldAutofocus>;
     }
 
     return (
@@ -321,9 +303,8 @@ class SchemaField extends Component {
     const { schema, errorSchema, uiSchema, registry, idSchema } = this.props;
 
     if (schema.type === "object") {
-      const nextLevel = idSchema.$id === "root"
-        ? 0
-        : registry.formContext.level + 1;
+      const nextLevel =
+        idSchema.$id === "root" ? 0 : registry.formContext.level + 1;
       const nextRegistry = {
         ...registry,
         formContext: { level: nextLevel }
@@ -335,17 +316,16 @@ class SchemaField extends Component {
     const autofocus = uiSchema && uiSchema["ui:autofocus"];
 
     let errorMessage;
+    let showError = false;
     if (errorSchema) {
       errorMessage = errorSchema.__errors.map(error => {
         return <div>{error}</div>;
       });
+      showError = errorMessage.length > 0;
     }
 
     return (
-      <FormGroup
-        showError={errorMessage.length > 0}
-        errorClassName="form-group-danger"
-      >
+      <FormGroup showError={showError} errorClassName="form-group-danger">
         {this.getFieldContent(errorMessage, autofocus)}
       </FormGroup>
     );

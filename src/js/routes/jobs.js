@@ -1,22 +1,17 @@
-import { Redirect, IndexRoute, Route } from "react-router";
 /* eslint-disable no-unused-vars */
 import React from "react";
 /* eslint-enable no-unused-vars */
+import { IndexRoute, Redirect, Route } from "react-router";
 
-import JobDetailPage from "../pages/jobs/JobDetailPage";
+import JobsOverview from "#PLUGINS/jobs/src/js/JobsOverview";
+import TaskDetailsTab from "#PLUGINS/services/src/js/pages/task-details/TaskDetailsTab";
+import TaskFileBrowser from "#PLUGINS/services/src/js/pages/task-details/TaskFileBrowser";
+import TaskFileViewer from "#PLUGINS/services/src/js/pages/task-details/TaskFileViewer";
+import TaskFilesTab from "#PLUGINS/services/src/js/pages/task-details/TaskFilesTab";
+import TaskLogsContainer from "#PLUGINS/services/src/js/pages/task-details/TaskLogsContainer";
+import JobDetailPageContainer from "#PLUGINS/jobs/src/js/JobDetailPageContainer";
+import JobsTaskDetailPage from "#PLUGINS/jobs/src/js/pages/JobTaskDetailPage";
 import JobsPage from "../pages/JobsPage";
-import JobsTab from "../pages/jobs/JobsTab";
-import JobsTaskDetailPage from "../pages/jobs/JobTaskDetailPage";
-import TaskDetailsTab
-  from "../../../plugins/services/src/js/pages/task-details/TaskDetailsTab";
-import TaskFileBrowser
-  from "../../../plugins/services/src/js/pages/task-details/TaskFileBrowser";
-import TaskFilesTab
-  from "../../../plugins/services/src/js/pages/task-details/TaskFilesTab";
-import TaskFileViewer
-  from "../../../plugins/services/src/js/pages/task-details/TaskFileViewer";
-import TaskLogsContainer
-  from "../../../plugins/services/src/js/pages/task-details/TaskLogsContainer";
 
 const jobsRoutes = [
   {
@@ -33,12 +28,12 @@ const jobsRoutes = [
     children: [
       {
         type: Route,
-        component: JobsTab,
+        component: JobsOverview,
         path: "overview",
         children: [
           {
             type: Route,
-            path: ":id"
+            path: ":path"
           }
         ]
       },
@@ -49,7 +44,7 @@ const jobsRoutes = [
       },
       {
         type: Route,
-        component: JobDetailPage,
+        component: JobDetailPageContainer,
         path: "detail/:id",
         children: [
           {
@@ -80,7 +75,8 @@ const jobsRoutes = [
                 children: [
                   {
                     component: TaskFileBrowser,
-                    fileViewerRoutePath: "/jobs/detail/:id/tasks/:taskID/files/view(/:filePath(/:innerPath))",
+                    fileViewerRoutePath:
+                      "/jobs/detail/:id/tasks/:taskID/files/view(/:filePath(/:innerPath))",
                     hideHeaderNavigation: true,
                     type: IndexRoute
                   },

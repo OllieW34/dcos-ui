@@ -1,4 +1,4 @@
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import mixin from "reactjs-mixin";
 import PropTypes from "prop-types";
 import React from "react";
@@ -13,7 +13,7 @@ import NodesList from "#SRC/js/structs/NodesList";
 import NodesGridView from "../../../components/NodesGridView";
 
 const MAX_SERVICES_TO_SHOW = 32;
-const METHODS_TO_BIND = ["handleShowServices"];
+const METHODS_TO_BIND = [];
 const OTHER_SERVICES_COLOR = 32;
 
 class NodesGridContainer extends mixin(StoreMixin, QueryParamsMixin) {
@@ -29,8 +29,7 @@ class NodesGridContainer extends mixin(StoreMixin, QueryParamsMixin) {
       receivedEmptyMesosState: true,
       receivedNodeHealthResponse: false,
       resourcesByFramework: {},
-      serviceColors: {},
-      showServices: false
+      serviceColors: {}
     };
     this.store_listeners = [
       {
@@ -51,14 +50,18 @@ class NodesGridContainer extends mixin(StoreMixin, QueryParamsMixin) {
   }
 
   componentWillReceiveProps(props) {
-    const { services, location: { query }, hosts } = props;
+    const {
+      services,
+      location: { query },
+      hosts
+    } = props;
     const ids = services.map(function(service) {
       return service.id;
     });
 
     const { serviceColors } = this.state;
 
-    if (!deepEqual(Object.keys(serviceColors), ids)) {
+    if (!isEqual(Object.keys(serviceColors), ids)) {
       this.computeServiceColors(services);
       this.computeShownServices(services);
     }
@@ -109,10 +112,6 @@ class NodesGridContainer extends mixin(StoreMixin, QueryParamsMixin) {
     this.setState({ filters, filteredNodes }, callback);
   }
 
-  handleShowServices(value) {
-    this.setState({ showServices: value });
-  }
-
   onStateStoreSuccess() {
     const { hiddenServices } = this.state;
     const resourcesByFramework = MesosStateStore.getHostResourcesByFramework(
@@ -147,8 +146,7 @@ class NodesGridContainer extends mixin(StoreMixin, QueryParamsMixin) {
       receivedEmptyMesosState,
       receivedNodeHealthResponse,
       resourcesByFramework,
-      serviceColors,
-      showServices
+      serviceColors
     } = this.state;
 
     const { services, selectedResource } = this.props;
@@ -160,12 +158,10 @@ class NodesGridContainer extends mixin(StoreMixin, QueryParamsMixin) {
         hosts={filteredNodes}
         receivedEmptyMesosState={receivedEmptyMesosState}
         receivedNodeHealthResponse={receivedNodeHealthResponse}
-        onShowServices={this.handleShowServices}
         resourcesByFramework={resourcesByFramework}
         selectedResource={selectedResource}
         serviceColors={serviceColors}
         services={services}
-        showServices={showServices}
       />
     );
   }

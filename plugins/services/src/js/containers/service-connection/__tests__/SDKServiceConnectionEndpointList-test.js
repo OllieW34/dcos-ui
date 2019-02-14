@@ -1,10 +1,7 @@
-jest.mock("../../../stores/SDKEndpointStore");
+import React from "react";
+import { mount } from "enzyme";
 
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+jest.mock("../../../stores/SDKEndpointStore");
 
 const SDKEndpointStore = require("../../../stores/SDKEndpointStore");
 const Framework = require("../../../structs/Framework");
@@ -12,6 +9,8 @@ const ServiceEndpoint = require("../../../structs/ServiceEndpoint");
 const SDKServiceConnectionEndpointList = require("../SDKServiceConnectionEndpointList");
 const SDKService = require("./fixtures/SDKService.json");
 const SDKServiceEndpoints = require("./fixtures/SDKServiceEndpoints.json");
+
+let thisInstance;
 
 describe("SDKServiceConnectionEndpointList", function() {
   const service = new Framework(SDKService);
@@ -30,30 +29,18 @@ describe("SDKServiceConnectionEndpointList", function() {
     SDKEndpointStore.getServiceError = function() {
       return "";
     };
-    this.container = global.document.createElement("div");
-    this.instance = ReactDOM.render(
-      <SDKServiceConnectionEndpointList service={service} />,
-      this.container
+    thisInstance = mount(
+      <SDKServiceConnectionEndpointList service={service} />
     );
-  });
-
-  afterEach(function() {
-    ReactDOM.unmountComponentAtNode(this.container);
   });
 
   describe("#render", function() {
     it("renders the correct endpoints tables", function() {
-      const elements = TestUtils.scryRenderedDOMComponentsWithClass(
-        this.instance,
-        "configuration-map-section"
-      );
+      const elements = thisInstance.find(".configuration-map-section");
 
       expect(elements.length).toEqual(4);
 
-      const rows = TestUtils.scryRenderedDOMComponentsWithClass(
-        this.instance,
-        "configuration-map-row table-row"
-      );
+      const rows = thisInstance.find(".configuration-map-row.table-row");
 
       expect(rows.length).toEqual(12);
     });

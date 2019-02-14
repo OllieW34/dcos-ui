@@ -8,7 +8,6 @@ import BasePageHeader from "../components/PageHeader";
 import FluidGeminiScrollbar from "./FluidGeminiScrollbar";
 import InternalStorageMixin from "../mixins/InternalStorageMixin";
 import ScrollbarUtil from "../utils/ScrollbarUtil";
-import SidebarToggle from "../components/SidebarToggle";
 import TemplateUtil from "../utils/TemplateUtil";
 
 const PageHeader = ({
@@ -67,6 +66,7 @@ var Page = React.createClass({
       PropTypes.string
     ]),
     dontScroll: PropTypes.bool,
+    flushBottom: PropTypes.bool,
     navigation: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
     title: PropTypes.oneOfType([PropTypes.object, PropTypes.string])
   },
@@ -109,11 +109,7 @@ var Page = React.createClass({
       return null;
     }
 
-    return (
-      <div className="page-header-navigation">
-        {navigation}
-      </div>
-    );
+    return <div className="page-header-navigation">{navigation}</div>;
   },
 
   getPageHeader() {
@@ -123,40 +119,18 @@ var Page = React.createClass({
     );
   },
 
-  getTitle(title) {
-    if (!title) {
-      return null;
-    }
-
-    if (React.isValidElement(title)) {
-      return title;
-    }
-
-    return (
-      <div className="page-header-title-container">
-        <SidebarToggle />
-        <h1 className="page-header-title flush">
-          {title}
-        </h1>
-      </div>
-    );
-  },
-
   getContent() {
-    const { dontScroll } = this.props;
+    const { dontScroll, flushBottom } = this.props;
     const contentClassSet = classNames(
       "page-body-content pod pod-tall flex",
       "flex-direction-top-to-bottom flex-item-grow-1",
       {
-        "flex-item-shrink-1": dontScroll
+        "flex-item-shrink-1": dontScroll,
+        "flush-bottom": flushBottom
       }
     );
 
-    const content = (
-      <div className={contentClassSet}>
-        {this.getChildren()}
-      </div>
-    );
+    const content = <div className={contentClassSet}>{this.getChildren()}</div>;
 
     if (dontScroll) {
       return content;

@@ -68,7 +68,8 @@ var PodUtil = {
       memo[podInstance.getId()] = podInstance.get();
 
       return memo;
-    }, {});
+    },
+    {});
 
     // Then merge historical instance information in the pod instance map
     const combinedInstanceMap = historicalInstances.reduce(function(
@@ -84,14 +85,19 @@ var PodUtil = {
 
       let combinedContainers = [].concat(
         podInstance.containers,
-        historicalInstance.containers
+        historicalInstance.containers.map(container =>
+          Object.assign({}, container, { isHistoricalInstance: true })
+        )
       );
 
       // Filter combined container list to remove potential duplicates
       const containerIds = new Map();
-      combinedContainers = combinedContainers.filter(function({ containerId }) {
-        if (containerId != null && !containerIds.has(containerId)) {
-          containerIds.set(containerId);
+      combinedContainers = combinedContainers.filter(function(container) {
+        if (
+          container.containerId != null &&
+          !containerIds.has(container.containerId)
+        ) {
+          containerIds.set(container.containerId);
 
           return true;
         }
@@ -102,7 +108,8 @@ var PodUtil = {
       podInstance.containers = combinedContainers;
 
       return memo;
-    }, podInstancesMap);
+    },
+    podInstancesMap);
 
     // Re-compose PodInstances from plain objects
     const instances = Object.values(combinedInstanceMap).map(function(
@@ -112,6 +119,13 @@ var PodUtil = {
     });
 
     return new PodInstanceList({ items: instances });
+  },
+
+  getInstanceIdFromTaskId(taskId) {
+    return taskId
+      .split(".")
+      .slice(0, 2)
+      .join(".");
   }
 };
 

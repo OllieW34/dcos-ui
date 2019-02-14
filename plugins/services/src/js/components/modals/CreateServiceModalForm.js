@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import { MountService } from "foundation-ui";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -7,8 +7,7 @@ import React, { Component } from "react";
 import { deepCopy, findNestedPropertyInObject } from "#SRC/js/utils/Util";
 import { pluralize } from "#SRC/js/utils/StringUtil";
 import AdvancedSection from "#SRC/js/components/form/AdvancedSection";
-import AdvancedSectionContent
-  from "#SRC/js/components/form/AdvancedSectionContent";
+import AdvancedSectionContent from "#SRC/js/components/form/AdvancedSectionContent";
 import AdvancedSectionLabel from "#SRC/js/components/form/AdvancedSectionLabel";
 import Batch from "#SRC/js/structs/Batch";
 import DataValidatorUtil from "#SRC/js/utils/DataValidatorUtil";
@@ -16,8 +15,7 @@ import ErrorMessageUtil from "#SRC/js/utils/ErrorMessageUtil";
 import ErrorsAlert from "#SRC/js/components/ErrorsAlert";
 import FluidGeminiScrollbar from "#SRC/js/components/FluidGeminiScrollbar";
 import JSONEditor from "#SRC/js/components/JSONEditor";
-import PageHeaderNavigationDropdown
-  from "#SRC/js/components/PageHeaderNavigationDropdown";
+import PageHeaderNavigationDropdown from "#SRC/js/components/PageHeaderNavigationDropdown";
 import TabButton from "#SRC/js/components/TabButton";
 import TabButtonList from "#SRC/js/components/TabButtonList";
 import Tabs from "#SRC/js/components/Tabs";
@@ -33,14 +31,10 @@ import CreateServiceModalFormUtil from "../../utils/CreateServiceModalFormUtil";
 import EnvironmentFormSection from "../forms/EnvironmentFormSection";
 import GeneralServiceFormSection from "../forms/GeneralServiceFormSection";
 import HealthChecksFormSection from "../forms/HealthChecksFormSection";
-import MultiContainerHealthChecksFormSection
-  from "../forms/MultiContainerHealthChecksFormSection";
-import MultiContainerNetworkingFormSection
-  from "../forms/MultiContainerNetworkingFormSection";
-import MultiContainerVolumesFormSection
-  from "../forms/MultiContainerVolumesFormSection";
-import MultiContainerFormAdvancedSection
-  from "../forms/MultiContainerFormAdvancedSection";
+import MultiContainerHealthChecksFormSection from "../forms/MultiContainerHealthChecksFormSection";
+import MultiContainerNetworkingFormSection from "../forms/MultiContainerNetworkingFormSection";
+import MultiContainerVolumesFormSection from "../forms/MultiContainerVolumesFormSection";
+import MultiContainerFormAdvancedSection from "../forms/MultiContainerFormAdvancedSection";
 import PlacementSection from "../forms/PlacementSection";
 import NetworkingFormSection from "../forms/NetworkingFormSection";
 import PodSpec from "../../structs/PodSpec";
@@ -59,6 +53,7 @@ const METHODS_TO_BIND = [
   "handleFormChange",
   "handleJSONChange",
   "handleJSONPropertyChange",
+  "handleJSONErrorStateChange",
   "handleRemoveItem",
   "handleClickItem"
 ];
@@ -78,6 +73,34 @@ const CONSTANTLY_UNMUTED_ERRORS = [
   /^volumes\.[0-9]+\./
 ];
 
+function cleanConfig(config) {
+  const { labels = {}, env = {}, environment = {}, ...serviceConfig } = config;
+
+  let newServiceConfig = CreateServiceModalFormUtil.stripEmptyProperties(
+    serviceConfig
+  );
+  if (Object.keys(labels).length !== 0) {
+    newServiceConfig = {
+      labels,
+      ...newServiceConfig
+    };
+  }
+  if (Object.keys(env).length !== 0) {
+    newServiceConfig = {
+      env,
+      ...newServiceConfig
+    };
+  }
+  if (Object.keys(environment).length !== 0) {
+    newServiceConfig = {
+      environment,
+      ...newServiceConfig
+    };
+  }
+
+  return newServiceConfig;
+}
+
 class CreateServiceModalForm extends Component {
   constructor() {
     super(...arguments);
@@ -86,19 +109,9 @@ class CreateServiceModalForm extends Component {
     //       shouldComponentUpdate function, since we are trying to reduce
     //       the number of updates as much as possible.
     // In the Next line we are destructing the config to keep labels as it is and even keep labels with an empty value
-    const { labels = {}, ...serviceConfig } = ServiceUtil.getServiceJSON(
-      this.props.service
+    const newServiceConfig = cleanConfig(
+      ServiceUtil.getServiceJSON(this.props.service)
     );
-
-    let newServiceConfig = {
-      labels,
-      ...CreateServiceModalFormUtil.stripEmptyProperties(serviceConfig)
-    };
-    if (Object.keys(labels).length === 0) {
-      newServiceConfig = CreateServiceModalFormUtil.stripEmptyProperties(
-        serviceConfig
-      );
-    }
     this.state = Object.assign(
       {
         appConfig: null,
@@ -131,9 +144,9 @@ class CreateServiceModalForm extends Component {
     // as the contents of the last rendered appConfig in the state.
     if (
       this.state.isPod !== isPod ||
-      (!deepEqual(prevJSON, nextJSON) &&
-        !deepEqual(this.state.appConfig, nextJSON) &&
-        !deepEqual(this.props.errors, nextProps.errors))
+      (!isEqual(prevJSON, nextJSON) &&
+        !isEqual(this.state.appConfig, nextJSON) &&
+        !isEqual(this.props.errors, nextProps.errors))
     ) {
       this.setState(this.getNewStateForJSON(nextJSON, isPod));
     }
@@ -146,7 +159,7 @@ class CreateServiceModalForm extends Component {
     const shouldUpdate =
       editingFieldPath === null &&
       (prevState.editingFieldPath !== null ||
-        !deepEqual(appConfig, prevState.appConfig));
+        !isEqual(appConfig, prevState.appConfig));
     if (shouldUpdate) {
       onChange(new service.constructor(appConfig));
     }
@@ -177,8 +190,8 @@ class CreateServiceModalForm extends Component {
     const prevJSON = ServiceUtil.getServiceJSON(this.props.service);
     const nextJSON = ServiceUtil.getServiceJSON(nextProps.service);
     if (
-      !deepEqual(prevJSON, nextJSON) &&
-      !deepEqual(this.state.appConfig, nextJSON)
+      !isEqual(prevJSON, nextJSON) &&
+      !isEqual(this.state.appConfig, nextJSON)
     ) {
       return true;
     }
@@ -195,7 +208,7 @@ class CreateServiceModalForm extends Component {
       didBatchChange ||
       didEditingFieldPathChange ||
       didActiveTabChange ||
-      !deepEqual(this.props.errors, nextProps.errors)
+      !isEqual(this.props.errors, nextProps.errors)
     );
   }
 
@@ -241,6 +254,14 @@ class CreateServiceModalForm extends Component {
       this.setState({
         editedFieldPaths: editedFieldPaths.concat([pathStr])
       });
+    }
+  }
+
+  handleJSONErrorStateChange(errorMessage) {
+    if (errorMessage !== null) {
+      this.props.onErrorsChange([{ message: errorMessage, path: [] }]);
+    } else {
+      this.props.onErrorsChange([]);
     }
   }
 
@@ -333,16 +354,7 @@ class CreateServiceModalForm extends Component {
     );
 
     // In the Next line we are destructing the config to keep labels as it is and even keep labels with an empty value
-    const { labels, ...config } = newConfig;
-
-    if (Object.keys(labels).length === 0) {
-      return CreateServiceModalFormUtil.stripEmptyProperties(config);
-    }
-
-    return {
-      labels,
-      ...CreateServiceModalFormUtil.stripEmptyProperties(config)
-    };
+    return cleanConfig(newConfig);
   }
 
   getErrors() {
@@ -379,10 +391,8 @@ class CreateServiceModalForm extends Component {
     return containers.map((item, index) => {
       const artifactsPath = `containers.${index}.artifacts`;
       const artifacts = findNestedPropertyInObject(data, artifactsPath) || [];
-      const artifactErrors = findNestedPropertyInObject(
-        errors,
-        artifactsPath
-      ) || [];
+      const artifactErrors =
+        findNestedPropertyInObject(errors, artifactsPath) || [];
 
       return (
         <TabView key={index} id={`container${index}`}>
@@ -391,11 +401,10 @@ class CreateServiceModalForm extends Component {
             pathMapping={ServiceErrorPathMapping}
             hideTopLevelErrors={!showAllErrors}
           />
-          <h1 className="flush-top short-bottom">
-            Container
-          </h1>
+          <h1 className="flush-top short-bottom">Container</h1>
           <p>
-            Configure your container below. Enter a container image or command you want to run.
+            Configure your container below. Enter a container image or command
+            you want to run.
           </p>
           <ContainerServiceFormSection
             data={data}
@@ -407,9 +416,7 @@ class CreateServiceModalForm extends Component {
           />
 
           <AdvancedSection>
-            <AdvancedSectionLabel>
-              More Settings
-            </AdvancedSectionLabel>
+            <AdvancedSectionLabel>More Settings</AdvancedSectionLabel>
             <AdvancedSectionContent>
               <MultiContainerFormAdvancedSection
                 data={data}
@@ -752,9 +759,7 @@ class CreateServiceModalForm extends Component {
                   handleTabChange={handleTabChange}
                   vertical={true}
                 >
-                  <TabButtonList>
-                    {tabButtonListItems}
-                  </TabButtonList>
+                  <TabButtonList>{tabButtonListItems}</TabButtonList>
                   <TabViewList>
                     <TabView id="services">
                       <ErrorsAlert
@@ -791,6 +796,7 @@ class CreateServiceModalForm extends Component {
             errors={errors}
             onChange={this.handleJSONChange}
             onPropertyChange={this.handleJSONPropertyChange}
+            onErrorStateChange={this.handleJSONErrorStateChange}
             showGutter={true}
             showPrintMargin={false}
             theme="monokai"

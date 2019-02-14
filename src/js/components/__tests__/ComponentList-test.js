@@ -1,9 +1,10 @@
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { shallow } from "enzyme";
+
 const ComponentList = require("../ComponentList");
 const HealthUnitsList = require("../../structs/HealthUnitsList");
+
+let thisComponent;
 
 describe("#ComponentList", function() {
   var healthUnits;
@@ -20,7 +21,7 @@ describe("#ComponentList", function() {
     });
     const displayCount = 2;
 
-    this.component = TestUtils.renderIntoDocument(
+    thisComponent = shallow(
       <ComponentList displayCount={displayCount} units={healthUnits} />
     );
   });
@@ -31,9 +32,9 @@ describe("#ComponentList", function() {
        * health status visibility importance order top to bottom
        * unhealthy > NA > warn/idle > healthy
        */
-      const sortedUnits = this.component.getSortedHealthValues(
-        healthUnits.getItems()
-      );
+      const sortedUnits = thisComponent
+        .instance()
+        .getSortedHealthValues(healthUnits.getItems());
       const expectedResult = [
         {
           id: "dcos-mesos-dns.service",
@@ -91,9 +92,9 @@ describe("#ComponentList", function() {
 
   describe("#getVisibleComponents", function() {
     it("only returns the number of visible units", function() {
-      const unitsVisible = this.component.getVisibleComponents(
-        healthUnits.getItems()
-      );
+      const unitsVisible = thisComponent
+        .instance()
+        .getVisibleComponents(healthUnits.getItems());
 
       expect(unitsVisible.length).toEqual(2);
     });

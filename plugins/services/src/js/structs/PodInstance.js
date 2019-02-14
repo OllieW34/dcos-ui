@@ -82,6 +82,14 @@ module.exports = class PodInstance extends Item {
     return new Date(this.get("lastChanged"));
   }
 
+  getAgentRegion() {
+    return this.get("agentRegion") || "";
+  }
+
+  getAgentZone() {
+    return this.get("agentZone") || "";
+  }
+
   getLastUpdated() {
     return new Date(this.get("lastUpdated"));
   }
@@ -97,6 +105,13 @@ module.exports = class PodInstance extends Item {
         disk: 0
       },
       resources
+    );
+  }
+
+  getIpAddresses() {
+    return (this.get("networks") || []).reduce(
+      (acc, network) => acc.concat(network.addresses),
+      []
     );
   }
 

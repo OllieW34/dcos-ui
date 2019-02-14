@@ -4,23 +4,21 @@ import { StoreMixin } from "mesosphere-shared-reactjs";
 import { FormattedMessage } from "react-intl";
 
 import DCOSStore from "#SRC/js/stores/DCOSStore";
+import ResourcesUtil from "#SRC/js/utils/ResourcesUtil";
 
 import Breadcrumb from "../components/Breadcrumb";
 import BreadcrumbTextContent from "../components/BreadcrumbTextContent";
 import ComponentList from "../components/ComponentList";
 import Config from "../config/Config";
-import HealthSorting
-  from "../../../plugins/services/src/js/constants/HealthSorting";
+import HealthSorting from "../../../plugins/services/src/js/constants/HealthSorting";
 import HostTimeSeriesChart from "../components/charts/HostTimeSeriesChart";
 import Icon from "../components/Icon";
 import InternalStorageMixin from "../mixins/InternalStorageMixin";
 import MesosSummaryStore from "../stores/MesosSummaryStore";
 import Page from "../components/Page";
 import Panel from "../components/Panel";
-import ResourceTimeSeriesChart
-  from "../components/charts/ResourceTimeSeriesChart";
-import ServiceList
-  from "../../../plugins/services/src/js/components/ServiceList";
+import ResourceTimeSeriesChart from "../components/charts/ResourceTimeSeriesChart";
+import ServiceList from "../../../plugins/services/src/js/components/ServiceList";
 import StringUtil from "../utils/StringUtil";
 import TasksChart from "../components/charts/TasksChart";
 import SidebarActions from "../events/SidebarActions";
@@ -174,6 +172,7 @@ var DashboardPage = React.createClass({
 
   render() {
     const columnClasses = "column-12 column-small-6 column-large-4";
+    const resourceColors = ResourcesUtil.getResourceColors();
     var data = this.internalStorage_get();
 
     return (
@@ -186,7 +185,7 @@ var DashboardPage = React.createClass({
               heading={this.getHeading("DASHBOARD.PANEL_HEADING.CPU")}
             >
               <ResourceTimeSeriesChart
-                colorIndex={0}
+                colorIndex={resourceColors["cpus"]}
                 usedResourcesStates={data.usedResourcesStates}
                 usedResources={data.usedResources}
                 totalResources={data.totalResources}
@@ -201,7 +200,7 @@ var DashboardPage = React.createClass({
               heading={this.getHeading("DASHBOARD.PANEL_HEADING.MEMORY")}
             >
               <ResourceTimeSeriesChart
-                colorIndex={6}
+                colorIndex={resourceColors["mem"]}
                 usedResourcesStates={data.usedResourcesStates}
                 usedResources={data.usedResources}
                 totalResources={data.totalResources}
@@ -216,12 +215,40 @@ var DashboardPage = React.createClass({
               heading={this.getHeading("DASHBOARD.PANEL_HEADING.DISK")}
             >
               <ResourceTimeSeriesChart
-                colorIndex={3}
+                colorIndex={resourceColors["disk"]}
                 usedResourcesStates={data.usedResourcesStates}
                 usedResources={data.usedResources}
                 totalResources={data.totalResources}
                 mode="disk"
                 refreshRate={Config.getRefreshRate()}
+              />
+            </Panel>
+          </div>
+          <div className={columnClasses}>
+            <Panel
+              className="dashboard-panel dashboard-panel-chart dashboard-panel-chart-timeseries panel"
+              heading={this.getHeading("DASHBOARD.PANEL_HEADING.GPU")}
+            >
+              <ResourceTimeSeriesChart
+                colorIndex={resourceColors["gpus"]}
+                usedResourcesStates={data.usedResourcesStates}
+                usedResources={data.usedResources}
+                totalResources={data.totalResources}
+                mode="gpus"
+                refreshRate={Config.getRefreshRate()}
+              />
+            </Panel>
+          </div>
+          <div className={columnClasses}>
+            <Panel
+              className="dashboard-panel dashboard-panel-chart dashboard-panel-chart-timeseries panel"
+              heading={this.getHeading("DASHBOARD.PANEL_HEADING.NODES")}
+            >
+              <HostTimeSeriesChart
+                data={data.activeNodes}
+                currentValue={data.hostCount}
+                refreshRate={Config.getRefreshRate()}
+                colorIndex={4}
               />
             </Panel>
           </div>
@@ -257,18 +284,6 @@ var DashboardPage = React.createClass({
               <ComponentList
                 displayCount={this.props.componentsListLength}
                 units={this.getUnits()}
-              />
-            </Panel>
-          </div>
-          <div className={columnClasses}>
-            <Panel
-              className="dashboard-panel dashboard-panel-chart dashboard-panel-chart-timeseries panel"
-              heading={this.getHeading("DASHBOARD.PANEL_HEADING.NODES")}
-            >
-              <HostTimeSeriesChart
-                data={data.activeNodes}
-                currentValue={data.hostCount}
-                refreshRate={Config.getRefreshRate()}
               />
             </Panel>
           </div>

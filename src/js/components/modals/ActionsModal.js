@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import React from "react";
 import { StoreMixin } from "mesosphere-shared-reactjs";
 
+import { Badge } from "@dcos/ui-kit";
 import ModalHeading from "./ModalHeading";
 import StringUtil from "../../utils/StringUtil";
 import Util from "../../utils/Util";
@@ -209,13 +210,15 @@ class ActionsModal extends mixin(StoreMixin) {
         const repeatTimes = errorMap[error];
 
         if (repeatTimes === 1) {
-          return <p className="text-error-state" key={index}>{error}</p>;
+          return (
+            <p className="text-error-state" key={index}>
+              {error}
+            </p>
+          );
         } else {
           return (
             <p className="text-error-state" key={index}>
-              <span className="badge badge-danger">
-                {`${repeatTimes}x`}
-              </span>
+              <Badge appearance="danger">{`${repeatTimes}x`}</Badge>
               {` ${error}`}
             </p>
           );
@@ -238,11 +241,7 @@ class ActionsModal extends mixin(StoreMixin) {
       return null;
     }
 
-    const heading = (
-      <ModalHeading>
-        {this.props.actionText.title}
-      </ModalHeading>
-    );
+    const heading = <ModalHeading>{this.props.actionText.title}</ModalHeading>;
 
     return (
       <Confirm

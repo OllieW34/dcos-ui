@@ -2,10 +2,8 @@ import PropTypes from "prop-types";
 import React from "react";
 import { MountService } from "foundation-ui";
 
-import ConfigurationMapHeading
-  from "#SRC/js/components/ConfigurationMapHeading";
-import ConfigurationMapSection
-  from "#SRC/js/components/ConfigurationMapSection";
+import ConfigurationMapHeading from "#SRC/js/components/ConfigurationMapHeading";
+import ConfigurationMapSection from "#SRC/js/components/ConfigurationMapSection";
 
 import ConfigurationMapTable from "../components/ConfigurationMapTable";
 import ServiceConfigDisplayUtil from "../utils/ServiceConfigDisplayUtil";
@@ -28,7 +26,7 @@ class PodStorageConfigSection extends React.Component {
         prop: "type"
       },
       {
-        heading: "Size",
+        heading: "Size (MiB)",
         prop: "size"
       },
       {
@@ -66,16 +64,26 @@ class PodStorageConfigSection extends React.Component {
         type = VolumeConstants.type.host;
       }
       if (volume.persistent != null) {
-        type = VolumeConstants.type.localPersistent;
+        if (volume.persistent.profileName != null) {
+          type = VolumeConstants.type.dss;
+        } else {
+          type = VolumeConstants.type.localPersistent;
+        }
       }
       if (Object.keys(volume).length === 1 && volume.name != null) {
         type = VolumeConstants.type.ephemeral;
       }
 
+      let size;
+      if (volume.persistent != null && volume.persistent.size != null) {
+        size = volume.persistent.size;
+      }
+
       const volumeInfo = {
         type,
         volume: volume.name,
-        hostPath: volume.host
+        hostPath: volume.host,
+        size
       };
 
       // Fetch all mounts for this volume in the containers
@@ -128,7 +136,7 @@ class PodStorageConfigSection extends React.Component {
               columns={this.getColumns()}
               data={volumeSummary}
               onEditClick={onEditClick}
-              tabViewID="multivolumes"
+              tabViewID="volumes"
             />
           </MountService.Mount>
         </ConfigurationMapSection>

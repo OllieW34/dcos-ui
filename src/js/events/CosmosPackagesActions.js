@@ -1,4 +1,5 @@
 import { RequestUtil } from "mesosphere-shared-reactjs";
+import * as repositoriesStream from "#PLUGINS/catalog/src/js/repositories/data/PackageRepositoryClient";
 
 import {
   REQUEST_COSMOS_PACKAGES_LIST_SUCCESS,
@@ -32,6 +33,14 @@ function getContentType({ action, actionType, entity, version }) {
   return `application/vnd.dcos.${entity}.${action}-${actionType}+json;charset=utf-8;version=${version}`;
 }
 
+function getErrorMessage(response = {}) {
+  if (typeof response === "string") {
+    return response;
+  }
+
+  return response.description || response.message || "An error has occurred.";
+}
+
 const CosmosPackagesActions = {
   fetchAvailablePackages(query) {
     RequestUtil.json({
@@ -54,6 +63,8 @@ const CosmosPackagesActions = {
       data: JSON.stringify({ query }),
       success(response) {
         const packages = response.packages || [];
+        const packageImages = {};
+
         const data = packages.map(function(cosmosPackage) {
           if (!cosmosPackage.resource) {
             cosmosPackage.resource = {};
@@ -64,11 +75,14 @@ const CosmosPackagesActions = {
             delete cosmosPackage.images;
           }
 
+          packageImages[cosmosPackage.name] = cosmosPackage.resource.images;
+
           return cosmosPackage;
         });
+
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_PACKAGES_SEARCH_SUCCESS,
-          data,
+          data: { packages: data, images: packageImages },
           query
         });
       },
@@ -106,15 +120,17 @@ const CosmosPackagesActions = {
         const packages = response.packages || [];
         // Map list data to match other endpoint structures
         const data = packages.map(function(item) {
-          const cosmosPackage = Util.findNestedPropertyInObject(
-            item,
-            "packageInformation.packageDefinition"
-          ) || {};
+          const cosmosPackage =
+            Util.findNestedPropertyInObject(
+              item,
+              "packageInformation.packageDefinition"
+            ) || {};
           cosmosPackage.appId = item.appId;
-          cosmosPackage.resource = Util.findNestedPropertyInObject(
-            item,
-            "packageInformation.resourceDefinition"
-          ) || {};
+          cosmosPackage.resource =
+            Util.findNestedPropertyInObject(
+              item,
+              "packageInformation.resourceDefinition"
+            ) || {};
 
           if (cosmosPackage.images) {
             cosmosPackage.resource.images = cosmosPackage.images;
@@ -382,60 +398,26 @@ const CosmosPackagesActions = {
   },
 
   fetchRepositories(type) {
-    RequestUtil.json({
-      contentType: getContentType({
-        action: "repository.list",
-        actionType: "request",
-        entity: "package",
-        version: "v1"
-      }),
-      headers: {
-        Accept: getContentType({
-          action: "repository.list",
-          actionType: "response",
-          entity: "package",
-          version: "v1"
-        })
-      },
-      method: "POST",
-      url: `${Config.rootUrl}${Config.cosmosAPIPrefix}/repository/list`,
-      data: JSON.stringify({ type }),
-      success(response) {
+    repositoriesStream.fetchRepositories(type).subscribe(
+      function success(response) {
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_REPOSITORIES_LIST_SUCCESS,
           data: response.repositories
         });
       },
-      error(xhr) {
+      function error({ response }) {
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_REPOSITORIES_LIST_ERROR,
-          data: RequestUtil.getErrorFromXHR(xhr),
-          xhr
+          data: getErrorMessage(response)
         });
       }
-    });
+    );
   },
 
   addRepository(name, uri, index) {
-    RequestUtil.json({
-      contentType: getContentType({
-        action: "repository.add",
-        actionType: "request",
-        entity: "package",
-        version: "v1"
-      }),
-      headers: {
-        Accept: getContentType({
-          action: "repository.add",
-          actionType: "response",
-          entity: "package",
-          version: "v1"
-        })
-      },
-      method: "POST",
-      url: `${Config.rootUrl}${Config.cosmosAPIPrefix}/repository/add`,
-      data: JSON.stringify({ name, uri, index }),
-      success(response) {
+    console.warn("DEPRECATED", "use the new data-layer approach");
+    repositoriesStream.addRepository(name, uri, index).subscribe(
+      function success(response) {
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_REPOSITORY_ADD_SUCCESS,
           data: response,
@@ -443,38 +425,21 @@ const CosmosPackagesActions = {
           uri
         });
       },
-      error(xhr) {
+      function error({ response }) {
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_REPOSITORY_ADD_ERROR,
-          data: RequestUtil.getErrorFromXHR(xhr),
+          data: getErrorMessage(response),
           name,
-          uri,
-          xhr
+          uri
         });
       }
-    });
+    );
   },
 
   deleteRepository(name, uri) {
-    RequestUtil.json({
-      contentType: getContentType({
-        action: "repository.delete",
-        actionType: "request",
-        entity: "package",
-        version: "v1"
-      }),
-      headers: {
-        Accept: getContentType({
-          action: "repository.delete",
-          actionType: "response",
-          entity: "package",
-          version: "v1"
-        })
-      },
-      method: "POST",
-      url: `${Config.rootUrl}${Config.cosmosAPIPrefix}/repository/delete`,
-      data: JSON.stringify({ name, uri }),
-      success(response) {
+    console.warn("DEPRECATED", "use the new data-layer approach");
+    repositoriesStream.deleteRepository(name, uri).subscribe(
+      function success(response) {
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_REPOSITORY_DELETE_SUCCESS,
           data: response,
@@ -482,16 +447,15 @@ const CosmosPackagesActions = {
           uri
         });
       },
-      error(xhr) {
+      function error({ response }) {
         AppDispatcher.handleServerAction({
           type: REQUEST_COSMOS_REPOSITORY_DELETE_ERROR,
-          data: RequestUtil.getErrorFromXHR(xhr),
+          data: getErrorMessage(response),
           name,
-          uri,
-          xhr
+          uri
         });
       }
-    });
+    );
   }
 };
 

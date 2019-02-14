@@ -46,7 +46,7 @@ class Node extends Item {
       return { percentage: 0, total: 0, value: 0 };
     }
 
-    const percentage = Math.round(100 * value / Math.max(1, total));
+    const percentage = Math.round((100 * value) / Math.max(1, total));
 
     return { percentage, total, value };
   }
@@ -73,7 +73,10 @@ class Node extends Item {
     let sum = 0;
 
     Object.keys(TaskStates).forEach(function(taskType) {
-      if (TaskStates[taskType].stateTypes.indexOf(state) !== -1) {
+      if (
+        TaskStates[taskType] &&
+        TaskStates[taskType].stateTypes.indexOf(state) !== -1
+      ) {
         // Make sure there's a value
         if (this[taskType]) {
           sum += this[taskType];
@@ -82,6 +85,27 @@ class Node extends Item {
     }, this);
 
     return sum;
+  }
+
+  getResources() {
+    return (
+      this.get("used_resources") || {
+        cpus: 0,
+        mem: 0,
+        gpus: 0,
+        disk: 0
+      }
+    );
+  }
+
+  isPublic() {
+    return (
+      findNestedPropertyInObject(this.get("attributes"), "public_ip") === "true"
+    );
+  }
+
+  getIp() {
+    return this.get("host_ip") || this.getHostName();
   }
 }
 

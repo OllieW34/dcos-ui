@@ -10,14 +10,10 @@ import DSLExpression from "#SRC/js/structs/DSLExpression";
 import DSLFilterList from "#SRC/js/structs/DSLFilterList";
 import Util from "#SRC/js/utils/Util";
 
-import PodInstanceStatusFilter
-  from "#PLUGINS/services/src/js/filters/PodInstanceStatusFilter";
-import PodInstancesZoneFilter
-  from "#PLUGINS/services/src/js/filters/PodInstancesZoneFilter";
-import PodInstancesRegionFilter
-  from "#PLUGINS/services/src/js/filters/PodInstancesRegionFilter";
-import PodInstanceTextFilter
-  from "#PLUGINS/services/src/js/filters/PodInstanceTextFilter";
+import PodInstanceStatusFilter from "#PLUGINS/services/src/js/filters/PodInstanceStatusFilter";
+import PodInstancesZoneFilter from "#PLUGINS/services/src/js/filters/PodInstancesZoneFilter";
+import PodInstancesRegionFilter from "#PLUGINS/services/src/js/filters/PodInstancesRegionFilter";
+import PodInstanceTextFilter from "#PLUGINS/services/src/js/filters/PodInstanceTextFilter";
 
 import ActionKeys from "../../constants/ActionKeys";
 import MarathonActions from "../../events/MarathonActions";
@@ -89,7 +85,9 @@ class PodInstancesContainer extends React.Component {
 
   handleExpressionChange(filterExpression = { value: "" }) {
     const { router } = this.context;
-    const { location: { pathname } } = this.props;
+    const {
+      location: { pathname }
+    } = this.props;
     router.push({ pathname, query: { q: filterExpression.value } });
 
     this.setState({ filterExpression });
@@ -113,9 +111,9 @@ class PodInstancesContainer extends React.Component {
     const query =
       Util.findNestedPropertyInObject(props, "location.query.q") || "is:active";
 
-    const mergedInstances = instances
-      .getItems()
-      .map(TaskMergeDataUtil.mergeData);
+    const mergedInstances = TaskMergeDataUtil.mergeTaskData(
+      instances.getItems()
+    );
 
     const newZones = Object.keys(
       mergedInstances.reduce(function(prev, instance) {
@@ -206,9 +204,6 @@ class PodInstancesContainer extends React.Component {
     this.setState({ modal: {} });
   }
 
-  fetchData() {
-    // Re-fetch data - this will end up being a single Relay request
-  }
   /**
    * Sets the actionType to pending in state which will in turn be pushed
    * to children components as a prop. Also clears any existing error for
@@ -253,11 +248,6 @@ class PodInstancesContainer extends React.Component {
         false
       )
     });
-
-    // Fetch new data if action was successful
-    if (!error) {
-      this.fetchData();
-    }
   }
 
   clearActionError(actionType) {

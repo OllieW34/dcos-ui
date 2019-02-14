@@ -142,7 +142,7 @@ class PodInstancesView extends React.Component {
       rightAlignLastNChildren = 1;
     }
 
-    const mergedTasks = instances.map(TaskMergeDataUtil.mergeData);
+    const mergedTasks = TaskMergeDataUtil.mergeTaskData(instances);
 
     return (
       <div className="flex-container-col flex-grow">
@@ -165,7 +165,6 @@ class PodInstancesView extends React.Component {
           pod={this.props.pod}
           filterText={filterText}
         />
-
       </div>
     );
   }

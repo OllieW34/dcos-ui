@@ -21,33 +21,39 @@ const RouterUtil = {
    * Parse the url and find the query string (?)
    * before or after the #
    *
+   * @param {string} [search=global.location.search] search url param
+   * @param {string} [hash=global.location.hash] hash url param
+   *
    * @returns {Boolean|Object} false or query string object
    */
-  getQueryStringInUrl() {
+  getQueryStringInUrl(
+    search = global.location.search,
+    hash = global.location.hash
+  ) {
     let queryString = false;
     // This will match url instances like this:
     // /?redirect=SOME_ADDRESS#/login
-    if (global.location.search) {
-      queryString = qs.parse(global.location.search);
+    if (search) {
+      queryString = qs.parse(search);
     }
 
     // This will match url instances like this:
     // /#/login?redirect=SOME_ADDRESS
-    if (!queryString && global.location.hash) {
-      queryString = qs.parse(global.location.hash);
+    if (!queryString && hash) {
+      queryString = qs.parse(hash);
     }
 
     return queryString;
   },
 
-  isValidRedirect(url) {
+  isValidRedirect(url, hostname = global.location.hostname) {
     const parsedUrl = Util.parseUrl(url);
 
     if (!parsedUrl) {
       return false;
     }
 
-    return parsedUrl.hostname === global.location.hostname;
+    return parsedUrl.hostname === hostname;
   },
 
   /**
@@ -56,11 +62,12 @@ const RouterUtil = {
    * the use of qs will decode the path
    * making the path not found
    *
+   * @param {string} [url=global.location.href] url to get path from
+   *
    * @returns {Boolean|String} False or path encodedURI
    */
-  getRelativePath() {
+  getRelativePath(url = global.location.href) {
     const RELATIVE_PATH = "relativePath=";
-    const url = global.location.href;
 
     if (!url.includes(RELATIVE_PATH)) {
       return false;
@@ -72,8 +79,8 @@ const RouterUtil = {
     return url.substring(startPoint, endPoint);
   },
 
-  getRedirectTo() {
-    return findRedirect(this.getQueryStringInUrl());
+  getRedirectTo(search, hash) {
+    return findRedirect(this.getQueryStringInUrl(search, hash));
   },
 
   /**
@@ -160,6 +167,20 @@ const RouterUtil = {
   },
 
   /**
+   * checks if route is a proper filepath route, returns corrected path if not
+   *
+   * @param {string} routePath - (reconstructed) route path
+   * @returns {string} - corrected filePath route path
+   */
+  getCorrectedFileRoutePath(routePath) {
+    if (routePath.includes(":filePath")) {
+      return routePath;
+    }
+
+    return routePath + (routePath.endsWith("/") ? "" : "/") + ":filePath";
+  },
+
+  /**
    * Returns a download path for the resource specified
    *
    * @param  {String} dataType Data Type of the file to download. e.x. text/plain
@@ -169,7 +190,9 @@ const RouterUtil = {
    */
   getResourceDownloadPath(dataType, filename, data) {
     if (dataType && filename && data) {
-      return `data:${dataType};content-disposition=attachment;filename=${filename};charset=utf-8,${encodeURIComponent(data)}`;
+      return `data:${dataType};content-disposition=attachment;filename=${filename};charset=utf-8,${encodeURIComponent(
+        data
+      )}`;
     }
 
     return "";

@@ -11,6 +11,7 @@ const displayedResourceValues = {
   roles: "Role",
   constraints: "Constraints",
   cpus: "CPU",
+  gpus: "GPU",
   mem: "Memory",
   disk: "Disk",
   ports: "Ports"
@@ -19,7 +20,7 @@ const displayedResourceValues = {
 const MAX_BAR_HEIGHT = 200;
 
 function getGraphBar(resource, data, index) {
-  const resourceOfferSummary = data[resource];
+  const resourceOfferSummary = data[resource] || { offers: 0, matched: 0 };
   const matchedOffers = resourceOfferSummary.matched;
   const offeredCount = resourceOfferSummary.offers;
   let percentageMatched = null;
@@ -39,8 +40,8 @@ function getGraphBar(resource, data, index) {
   }
 
   const barGraphMatchedClasses = classNames("funnel-graph-item-bar-matched", {
-    "funnel-graph-item-bar-matched-border-top": percentageMatched > 0 &&
-      percentageMatched < 1
+    "funnel-graph-item-bar-matched-border-top":
+      percentageMatched > 0 && percentageMatched < 1
   });
 
   const offeredHeight = Math.ceil(MAX_BAR_HEIGHT * percentageOffered);
@@ -98,7 +99,10 @@ function getGraphSpacer({ key, showIcon = true }) {
 }
 
 function getResourceTooltipContent(resource, data) {
-  let { matched, offers, requested: requestedValue } = data[resource];
+  let { matched, offers, requested: requestedValue } = data[resource] || {
+    offers: 0,
+    matched: 0
+  };
   let docsURI = null;
   let explanatoryText = null;
 
@@ -127,6 +131,11 @@ function getResourceTooltipContent(resource, data) {
     explanatoryText = `The CPUs offered ${explanatoryText} your service's requirements (${requestedValue}).`;
   }
 
+  if (resource === "gpus") {
+    docsURI = `${Config.mesosDocsURI}attributes-resources/`;
+    explanatoryText = `The GPUs offered ${explanatoryText} your service's requirements (${requestedValue}).`;
+  }
+
   if (resource === "mem") {
     requestedValue = Units.formatResource(resource, requestedValue);
     docsURI = `${Config.mesosDocsURI}attributes-resources/`;
@@ -146,13 +155,24 @@ function getResourceTooltipContent(resource, data) {
 
   return (
     <span>
-      {explanatoryText} <a href={docsURI} target="_blank">Learn more</a>.
+      {explanatoryText}{" "}
+      <a href={docsURI} target="_blank">
+        Learn more
+      </a>.
     </span>
   );
 }
 
 function RecentOffersSummary({ data }) {
-  const funnelItems = ["roles", "constraints", "cpus", "mem", "disk", "ports"];
+  const funnelItems = [
+    "roles",
+    "constraints",
+    "cpus",
+    "mem",
+    "disk",
+    "gpus",
+    "ports"
+  ];
   const funnelGraphItems = funnelItems.reduce((accumulator, item, index) => {
     accumulator.push(getGraphBar(item, data, index));
 
@@ -171,9 +191,7 @@ function RecentOffersSummary({ data }) {
 
   return (
     <div className="funnel-graph pod flush-horizontal">
-      <div className="funnel-graph-bars">
-        {funnelGraphItems}
-      </div>
+      <div className="funnel-graph-bars">{funnelGraphItems}</div>
       <div className="funnel-graph-key">
         <div className="funnel-graph-key-item">
           <span className="funnel-graph-key-dot funnel-graph-key-dot-matched dot" />

@@ -3,6 +3,22 @@ import marked from "marked";
 import React from "react";
 /* eslint-enable no-unused-vars */
 
+import search from "./search";
+
+const markdownRenderer = {
+  rendererReady: false,
+  prepareMarkdownRenderer() {
+    const renderer = new marked.Renderer();
+    renderer.link = function() {
+      const out = marked.Renderer.prototype.link.apply(this, arguments);
+
+      return out.replace(/^<a/, '<a target="_blank"');
+    };
+    marked.setOptions({ renderer });
+    this.rendererReady = true;
+  }
+};
+
 const StringUtil = {
   arrayToJoinedString(array = [], separator = ", ") {
     if (Array.isArray(array)) {
@@ -12,40 +28,23 @@ const StringUtil = {
     return "";
   },
 
-  getSearchTokens(searchString) {
-    if (!searchString) {
-      return [];
-    }
+  /**
+   * Filters and sorts an array of objects according to a property/getter func
+   *
+   * @param {array} objects
+   * @param {mixed} property
+   * @param {string} searchString
+   * @return {array} filtered objects
+   */
+  filterByString(objects, property, searchString) {
+    const extractor =
+      typeof property === "function"
+        ? property
+        : obj => [].concat(obj[property]);
 
-    return (
-      String(searchString)
-        .toLowerCase()
-        // split on non-word characters and slash
-        .split(/[^\w/]/)
-        .filter(Boolean)
+    return search(searchString, objects, extractor).map(
+      scoredObject => scoredObject.obj
     );
-  },
-
-  filterByString(objects, getter, searchString) {
-    const searchItems = this.getSearchTokens(searchString);
-
-    if (typeof getter === "function") {
-      return objects.filter(obj => {
-        return searchItems.some(item => {
-          return this.getSearchTokens(getter(obj)).some(token => {
-            return token.startsWith(item);
-          });
-        });
-      });
-    }
-
-    return objects.filter(obj => {
-      return searchItems.some(item => {
-        return this.getSearchTokens(obj[getter]).some(token => {
-          return token.startsWith(item);
-        });
-      });
-    });
   },
 
   escapeForRegExp(str) {
@@ -189,6 +188,10 @@ const StringUtil = {
   parseMarkdown(text) {
     if (!text) {
       return null;
+    }
+
+    if (!markdownRenderer.rendererReady) {
+      markdownRenderer.prepareMarkdownRenderer();
     }
 
     const __html = marked(

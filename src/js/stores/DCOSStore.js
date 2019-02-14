@@ -14,15 +14,12 @@ import {
   MARATHON_SERVICE_VERSIONS_CHANGE
 } from "../../../plugins/services/src/js/constants/EventTypes";
 
-import DeclinedOffersUtil
-  from "../../../plugins/services/src/js/utils/DeclinedOffersUtil";
-import DeploymentsList
-  from "../../../plugins/services/src/js/structs/DeploymentsList";
+import DeclinedOffersUtil from "../../../plugins/services/src/js/utils/DeclinedOffersUtil";
+import DeploymentsList from "../../../plugins/services/src/js/structs/DeploymentsList";
 import Item from "../structs/Item";
 import Framework from "../../../plugins/services/src/js/structs/Framework";
 import JobTree from "../structs/JobTree";
-import MarathonStore
-  from "../../../plugins/services/src/js/stores/MarathonStore";
+import MarathonStore from "../../../plugins/services/src/js/stores/MarathonStore";
 import MesosSummaryStore from "./MesosSummaryStore";
 import MetronomeStore from "./MetronomeStore";
 import NotificationStore from "./NotificationStore";
@@ -204,6 +201,7 @@ class DCOSStore extends EventEmitter {
       );
     });
 
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
@@ -237,11 +235,14 @@ class DCOSStore extends EventEmitter {
     // Populate deployments with services data immediately
     this.onMarathonDeploymentsChange();
 
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
   onMarathonQueueChange(nextQueue) {
-    const { marathon: { queue } } = this.data;
+    const {
+      marathon: { queue }
+    } = this.data;
 
     const queuedAppIDs = [];
     nextQueue.forEach(entry => {
@@ -280,12 +281,15 @@ class DCOSStore extends EventEmitter {
       }
     });
 
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
   onMarathonServiceVersionChange(event) {
     const { serviceID, versionID, version } = event;
-    const { marathon: { versions } } = this.data;
+    const {
+      marathon: { versions }
+    } = this.data;
     let currentVersions = versions.get(serviceID);
 
     if (!currentVersions) {
@@ -295,12 +299,15 @@ class DCOSStore extends EventEmitter {
 
     currentVersions.set(versionID, version);
 
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
   onMarathonServiceVersionsChange(event) {
     let { serviceID, versions: nextVersions } = event;
-    const { marathon: { versions } } = this.data;
+    const {
+      marathon: { versions }
+    } = this.data;
     const currentVersions = versions.get(serviceID);
 
     if (currentVersions) {
@@ -308,6 +315,7 @@ class DCOSStore extends EventEmitter {
     }
 
     versions.set(serviceID, nextVersions);
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
@@ -318,6 +326,7 @@ class DCOSStore extends EventEmitter {
     }
 
     this.data.mesos = states;
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
@@ -328,6 +337,7 @@ class DCOSStore extends EventEmitter {
     metronome.jobTree = MetronomeStore.jobTree;
     metronome.dataReceived = true;
 
+    this.clearServiceTreeCache();
     this.emit(DCOS_CHANGE);
   }
 
@@ -402,7 +412,27 @@ class DCOSStore extends EventEmitter {
    * @type {ServiceTree}
    */
   get serviceTree() {
-    const { marathon: { serviceTree, queue, versions }, mesos } = this.data;
+    if (!this._serviceTree) {
+      this.serviceTree = this.buildServiceTree();
+    }
+
+    return this._serviceTree;
+  }
+
+  set serviceTree(newValue) {
+    this._serviceTree = newValue;
+  }
+
+  clearServiceTreeCache() {
+    this.serviceTree = null;
+    this._flatServiceTree = null;
+  }
+
+  buildServiceTree() {
+    const {
+      marathon: { serviceTree, queue, versions },
+      mesos
+    } = this.data;
 
     // Create framework dict from Mesos data
     const frameworks = mesos
@@ -410,7 +440,7 @@ class DCOSStore extends EventEmitter {
       .getServiceList()
       .reduceItems(function(memo, framework) {
         if (framework instanceof Item) {
-          memo[framework.get("name")] = framework.get();
+          memo[`/${framework.get("name")}`] = framework.get();
         }
 
         return memo;
@@ -429,7 +459,7 @@ class DCOSStore extends EventEmitter {
       };
 
       if (item instanceof Framework) {
-        options = Object.assign(options, frameworks[item.getName()]);
+        options = Object.assign(options, frameworks[item.getId()]);
       }
 
       if (item instanceof Item) {
@@ -438,6 +468,35 @@ class DCOSStore extends EventEmitter {
 
       return new item.constructor(Object.assign(options, item));
     });
+  }
+
+  get taskLookupTable() {
+    if (!this._flatServiceTree) {
+      this._flatServiceTree = this.buildFlatServiceTree(this.serviceTree);
+    }
+
+    return this._flatServiceTree;
+  }
+
+  buildFlatServiceTree(serviceTree) {
+    return serviceTree.reduceItems((memo, item) => {
+      if (item instanceof ServiceTree) {
+        return memo;
+      }
+
+      if (item.tasks) {
+        item.tasks.forEach(task => {
+          const taskData = {
+            version: task.version,
+            healthCheckResults: task.healthCheckResults
+          };
+
+          memo[task.id] = taskData;
+        });
+      }
+
+      return memo;
+    }, {});
   }
 
   get jobDataReceived() {

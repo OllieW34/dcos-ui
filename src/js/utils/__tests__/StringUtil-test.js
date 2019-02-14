@@ -45,44 +45,6 @@ describe("StringUtil", function() {
     });
   });
 
-  describe("#getSearchTokens", function() {
-    it("splits on non-word characters, but not slashes", function() {
-      expect(
-        StringUtil.getSearchTokens(
-          "foo/bar\\.baz.quis,qux quux[quuz]corge grault,garply\twaldo\bfred"
-        )
-      ).toEqual([
-        "foo/bar",
-        "baz",
-        "quis",
-        "qux",
-        "quux",
-        "quuz",
-        "corge",
-        "grault",
-        "garply",
-        "waldo",
-        "fred"
-      ]);
-    });
-
-    it("returns converts input to string if not a string", function() {
-      expect(StringUtil.getSearchTokens(10)).toEqual(["10"]);
-    });
-
-    it("removes empty strings", function() {
-      expect(StringUtil.getSearchTokens("bar\\.baz")).toEqual(["bar", "baz"]);
-    });
-
-    it("lowercases strings", function() {
-      expect(StringUtil.getSearchTokens("QuUx[qUuz]coRge")).toEqual([
-        "quux",
-        "quuz",
-        "corge"
-      ]);
-    });
-  });
-
   describe("#filterByString", function() {
     it("filters using a key as getter", function() {
       var _return = StringUtil.filterByString(
@@ -295,6 +257,46 @@ describe("StringUtil", function() {
           serialComma: false
         })
       ).toEqual("one, two and three");
+    });
+  });
+
+  describe("#parseMarkdown", function() {
+    it("adds _blank target to plain links in text", function() {
+      expect(
+        StringUtil.parseMarkdown("Hello this is a link http://somelink.com")
+          .__html
+      ).toEqual(
+        `<p>Hello this is a link <a target="_blank" href="http://somelink.com">http://somelink.com</a></p>\n`
+      );
+    });
+
+    it("adds _blank target to formatted links in text", function() {
+      expect(
+        StringUtil.parseMarkdown("Hello this is a [link](http://somelink.com)")
+          .__html
+      ).toEqual(
+        `<p>Hello this is a <a target="_blank" href="http://somelink.com">link</a></p>\n`
+      );
+    });
+
+    it("does not add target _blank to non-uri segments attached to plain links containing '<a'", function() {
+      expect(
+        StringUtil.parseMarkdown(
+          "Hello this is a bad link http://a.com/<a-mean-uri"
+        ).__html
+      ).toEqual(
+        `<p>Hello this is a bad link <a target="_blank" href="http://a.com/">http://a.com/</a>&lt;a-mean-uri</p>\n`
+      );
+    });
+
+    it("does not add additional target _blank to uri segments in formatted links containing '<a'", function() {
+      expect(
+        StringUtil.parseMarkdown(
+          "Hello this is a bad [link](http://a.com/<a-mean-uri)"
+        ).__html
+      ).toEqual(
+        `<p>Hello this is a bad <a target="_blank" href="http://a.com/&lt;a-mean-uri">link</a></p>\n`
+      );
     });
   });
 });

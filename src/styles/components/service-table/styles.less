@@ -13,6 +13,7 @@
     &-column {
 
       &-cpus,
+      &-gpus,
       &-mem,
       &-disk {
         display: none;
@@ -36,6 +37,14 @@
         width: 115px;
       }
 
+      &-version {
+        width: 115px;
+      }
+
+      &-regions {
+        width: 115px;
+      }
+
       &-instances {
         width: 115px;
 
@@ -45,7 +54,8 @@
         }
       }
 
-      &-cpus {
+      &-cpus,
+      &-gpus {
         width: 65px;
       }
 
@@ -86,7 +96,7 @@
       &-column {
 
         &-name {
-          width: 73px;
+          width: 100px;
         }
 
         &-instances {
@@ -94,13 +104,19 @@
         }
 
         &-cpus,
+        &-gpus,
         &-mem,
         &-disk {
           width: 60px;
         }
 
-        &-status {
+        &-status,
+        &-version {
           width: 100px;
+        }
+
+        &-regions {
+          width: 110px;
         }
 
         &-actions {
@@ -131,6 +147,7 @@
       &-column {
 
         &-cpus,
+        &-gpus,
         &-mem,
         &-disk {
           display: table-cell;
@@ -140,8 +157,13 @@
           }
         }
 
-        &-status {
+        &-status,
+        &-version {
           width: 70px;
+        }
+
+        &-regions {
+          width: 80px;
         }
 
         &-actions {
@@ -181,6 +203,7 @@
         }
 
         &-cpus,
+        &-gpus,
         &-mem,
         &-disk {
           width: 40px;
@@ -188,6 +211,10 @@
 
         &-status {
           width: 78px;
+        }
+
+        &-regions {
+          width: 88px;
         }
 
         &-actions {
@@ -220,6 +247,10 @@
 
         &-status {
           width: 115px;
+        }
+
+        &-regions {
+          width: 125px;
         }
 
         &-instances {

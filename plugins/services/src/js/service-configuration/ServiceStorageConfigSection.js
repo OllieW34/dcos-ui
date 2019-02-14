@@ -1,9 +1,7 @@
 import { formatResource } from "#SRC/js/utils/Units";
 import Util from "#SRC/js/utils/Util";
-import VolumeDefinitions
-  from "#PLUGINS/services/src/js/constants/VolumeDefinitions";
-import VolumeConstants
-  from "#PLUGINS/services/src/js/constants/VolumeConstants";
+import VolumeDefinitions from "#PLUGINS/services/src/js/constants/VolumeDefinitions";
+import VolumeConstants from "#PLUGINS/services/src/js/constants/VolumeConstants";
 
 import { getDisplayValue } from "../utils/ServiceConfigDisplayUtil";
 import ServiceConfigBaseSectionDisplay from "./ServiceConfigBaseSectionDisplay";
@@ -53,7 +51,7 @@ class ServiceStorageConfigSection extends ServiceConfigBaseSectionDisplay {
       appConfig.container.volumes == null
     ) {
       // sanity check
-      return null;
+      return super.getDefinition();
     }
 
     const volumes = appConfig.container.volumes;

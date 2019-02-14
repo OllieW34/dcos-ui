@@ -1,35 +1,34 @@
-const React = require("react");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { shallow } from "enzyme";
 
 const TabButton = require("../TabButton");
 const TabButtonList = require("../TabButtonList");
 
+let thisChangeHandler, thisInstance;
+
 describe("TabButtonList", function() {
   beforeEach(function() {
-    this.changeHandler = jasmine.createSpy("change handler");
+    thisChangeHandler = jasmine.createSpy("change handler");
   });
 
   it("passes onChange as click handler for each TabButton instance", function() {
-    this.instance = TestUtils.renderIntoDocument(
-      <TabButtonList onChange={this.changeHandler}>
+    thisInstance = shallow(
+      <TabButtonList onChange={thisChangeHandler}>
         <TabButton id="foo" />
         <TabButton id="bar" />
         <TabButton id="baz" />
       </TabButtonList>
     );
 
-    const instances = TestUtils.scryRenderedComponentsWithType(
-      this.instance,
-      TabButton
-    );
+    const instances = thisInstance.find(TabButton);
 
     instances.forEach(tabButtonInstance => {
-      expect(tabButtonInstance.props.onClick).toEqual(this.changeHandler);
+      expect(tabButtonInstance.prop("onClick")).toEqual(thisChangeHandler);
     });
   });
 
   it("sets only first child to active if no active tab is defined", function() {
-    this.instance = TestUtils.renderIntoDocument(
+    thisInstance = shallow(
       <TabButtonList>
         <TabButton id="foo" />
         <TabButton id="bar" />
@@ -37,22 +36,19 @@ describe("TabButtonList", function() {
       </TabButtonList>
     );
 
-    const instances = TestUtils.scryRenderedComponentsWithType(
-      this.instance,
-      TabButton
-    );
+    const instances = thisInstance.find(TabButton);
 
     instances.forEach(function(tabButtonInstance, index) {
       if (index === 0) {
-        expect(tabButtonInstance.props.active).toBeTruthy();
+        expect(tabButtonInstance.prop("active")).toBeTruthy();
       } else {
-        expect(tabButtonInstance.props.active).toBeFalsy();
+        expect(tabButtonInstance.prop("active")).toBeFalsy();
       }
     });
   });
 
   it("passes active prop to instance whose ID matches activeTab", function() {
-    this.instance = TestUtils.renderIntoDocument(
+    thisInstance = shallow(
       <TabButtonList activeTab="bar">
         <TabButton id="foo" />
         <TabButton id="bar" />
@@ -60,16 +56,13 @@ describe("TabButtonList", function() {
       </TabButtonList>
     );
 
-    const instances = TestUtils.scryRenderedComponentsWithType(
-      this.instance,
-      TabButton
-    );
+    const instances = thisInstance.find(TabButton);
 
     instances.forEach(function(tabButtonInstance) {
-      if (tabButtonInstance.props.id === "bar") {
-        expect(tabButtonInstance.props.active).toBeTruthy();
+      if (tabButtonInstance.prop("id") === "bar") {
+        expect(tabButtonInstance.prop("active")).toBeTruthy();
       } else {
-        expect(tabButtonInstance.props.active).toBeFalsy();
+        expect(tabButtonInstance.prop("active")).toBeFalsy();
       }
     });
   });

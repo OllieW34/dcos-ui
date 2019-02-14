@@ -37,6 +37,14 @@ describe("JSONMultiContainer", function() {
                 hostPort: 0,
                 protocol: ["tcp"],
                 labels: {
+                  vipDCOS: "1.2.3.4:80" // Custom VIP
+                }
+              },
+              {
+                name: "nginx",
+                hostPort: 0,
+                protocol: ["tcp"],
+                labels: {
                   VIP_0: "1.2.3.4:80" // Custom VIP
                 }
               }
@@ -69,17 +77,32 @@ describe("JSONMultiContainer", function() {
         scheduling: {
           placement: {
             constraints: [{ fieldName: "hostname", operator: "UNIQUE" }]
+          },
+          backoff: {
+            backoff: 1,
+            backoffFactor: 1.15,
+            maxLaunchDelay: 30
+          },
+          upgrade: {
+            minimumHealthCapacity: 1,
+            maximumOverCapacity: 1
+          },
+          killSelection: "YOUNGEST_FIRST",
+          unreachableStrategy: {
+            inactiveAfterSeconds: 0,
+            expungeAfterSeconds: 0
           }
         }
       };
 
       const reducers = combineReducers(JSONMultiContainerReducers).bind({});
       const parser = combineParsers(JSONMultiContainerParser);
-      const batch = parser(
-        JSON.parse(JSON.stringify(podDefinition))
-      ).reduce(function(batch, item) {
-        return batch.add(item);
-      }, new Batch());
+      const batch = parser(JSON.parse(JSON.stringify(podDefinition))).reduce(
+        function(batch, item) {
+          return batch.add(item);
+        },
+        new Batch()
+      );
       const jsonFromBatch = batch.reduce(reducers, {});
       expect(jsonFromBatch).toEqual(podDefinition);
       const batchFromJSONFromBatch = parser(jsonFromBatch).reduce(function(
@@ -87,7 +110,8 @@ describe("JSONMultiContainer", function() {
         item
       ) {
         return batch.add(item);
-      }, new Batch());
+      },
+      new Batch());
       const jsonFromBatchFromJSONFromBatch = batchFromJSONFromBatch.reduce(
         reducers,
         {}

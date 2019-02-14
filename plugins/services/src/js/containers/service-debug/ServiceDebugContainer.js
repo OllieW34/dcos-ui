@@ -4,12 +4,10 @@ import { routerShape } from "react-router";
 
 import Alert from "#SRC/js/components/Alert";
 import ConfigurationMap from "#SRC/js/components/ConfigurationMap";
-import ConfigurationMapHeading
-  from "#SRC/js/components/ConfigurationMapHeading";
+import ConfigurationMapHeading from "#SRC/js/components/ConfigurationMapHeading";
 import ConfigurationMapLabel from "#SRC/js/components/ConfigurationMapLabel";
 import ConfigurationMapRow from "#SRC/js/components/ConfigurationMapRow";
-import ConfigurationMapSection
-  from "#SRC/js/components/ConfigurationMapSection";
+import ConfigurationMapSection from "#SRC/js/components/ConfigurationMapSection";
 import ConfigurationMapValue from "#SRC/js/components/ConfigurationMapValue";
 import DateUtil from "#SRC/js/utils/DateUtil";
 import TimeAgo from "#SRC/js/components/TimeAgo";
@@ -18,6 +16,7 @@ import DeclinedOffersTable from "../../components/DeclinedOffersTable";
 import MarathonStore from "../../stores/MarathonStore";
 import RecentOffersSummary from "../../components/RecentOffersSummary";
 import Service from "../../structs/Service";
+import Framework from "../../structs/Framework";
 import TaskStatsTable from "./TaskStatsTable";
 
 const METHODS_TO_BIND = ["handleJumpToRecentOffersClick"];
@@ -50,9 +49,7 @@ class ServiceDebugContainer extends React.Component {
 
     return (
       <div>
-        <ConfigurationMapHeading level={2}>
-          Details
-        </ConfigurationMapHeading>
+        <ConfigurationMapHeading level={2}>Details</ConfigurationMapHeading>
         <DeclinedOffersTable
           offers={queue.declinedOffers.offers}
           service={service}
@@ -80,49 +77,37 @@ class ServiceDebugContainer extends React.Component {
     return (
       <ConfigurationMapSection>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Task ID
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Task ID</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getValueText(taskId)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            State
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>State</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getValueText(state)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Message
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Message</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getValueText(message)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Host
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Host</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getValueText(host)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Timestamp
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Timestamp</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {timestamp} (<TimeAgo time={new Date(timestamp)} />)
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Version
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Version</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {version} (<TimeAgo time={new Date(version)} />)
           </ConfigurationMapValue>
@@ -150,17 +135,11 @@ class ServiceDebugContainer extends React.Component {
     return (
       <ConfigurationMapSection>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Scale or Restart
-          </ConfigurationMapLabel>
-          <ConfigurationMapValue>
-            {lastScaling}
-          </ConfigurationMapValue>
+          <ConfigurationMapLabel>Scale or Restart</ConfigurationMapLabel>
+          <ConfigurationMapValue>{lastScaling}</ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow>
-          <ConfigurationMapLabel>
-            Configuration
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Configuration</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {`${lastConfigChangeAt} `}
             (<TimeAgo time={new Date(lastConfigChangeAt)} />)
@@ -179,9 +158,7 @@ class ServiceDebugContainer extends React.Component {
 
     return (
       <div>
-        <ConfigurationMapHeading level={2}>
-          Summary
-        </ConfigurationMapHeading>
+        <ConfigurationMapHeading level={2}>Summary</ConfigurationMapHeading>
         <RecentOffersSummary data={service.getQueue().declinedOffers.summary} />
       </div>
     );
@@ -195,8 +172,12 @@ class ServiceDebugContainer extends React.Component {
     }
 
     const queue = service.getQueue();
-    const { declinedOffers: { summary } } = queue;
-    const { roles: { offers = 0 } } = summary;
+    const {
+      declinedOffers: { summary }
+    } = queue;
+    const {
+      roles: { offers = 0 }
+    } = summary;
 
     return ` (${offers})`;
   }
@@ -212,7 +193,7 @@ class ServiceDebugContainer extends React.Component {
   getRecentOfferSummaryIntroText() {
     const { service } = this.props;
 
-    if (this.isFramework(service)) {
+    if (service instanceof Framework) {
       const frameworkName = service.getPackageName();
 
       return this.getRecentOfferSummaryDisabledText(frameworkName);
@@ -266,7 +247,7 @@ class ServiceDebugContainer extends React.Component {
   getWaitingForResourcesNotice() {
     const { service } = this.props;
 
-    if (this.isFramework(service)) {
+    if (service instanceof Framework) {
       return null;
     }
 
@@ -290,7 +271,8 @@ class ServiceDebugContainer extends React.Component {
         {
           "DC/OS has been waiting for resources and is unable to complete this deployment for "
         }
-        {DateUtil.getDuration(timeWaiting, null)}{". "}
+        {DateUtil.getDuration(timeWaiting, null)}
+        {". "}
         <a className="clickable" onClick={this.handleJumpToRecentOffersClick}>
           See recent resource offers
         </a>.
@@ -302,12 +284,6 @@ class ServiceDebugContainer extends React.Component {
     if (this.offerSummaryRef) {
       this.offerSummaryRef.scrollIntoView();
     }
-  }
-
-  isFramework(service) {
-    const { labels = {} } = service;
-
-    return labels.DCOS_PACKAGE_FRAMEWORK_NAME != null;
   }
 
   shouldShowDeclinedOfferSummary() {
@@ -332,7 +308,7 @@ class ServiceDebugContainer extends React.Component {
     const { service } = this.props;
     const queue = service.getQueue();
 
-    return queue == null || this.isFramework(service);
+    return queue == null || service instanceof Framework;
   }
 
   render() {
@@ -341,21 +317,15 @@ class ServiceDebugContainer extends React.Component {
         {this.getWaitingForResourcesNotice()}
         <ConfigurationMap>
           <ConfigurationMapSection>
-            <ConfigurationMapHeading>
-              Last Changes
-            </ConfigurationMapHeading>
+            <ConfigurationMapHeading>Last Changes</ConfigurationMapHeading>
             {this.getLastVersionChange()}
           </ConfigurationMapSection>
           <ConfigurationMapSection>
-            <ConfigurationMapHeading>
-              Last Task Failure
-            </ConfigurationMapHeading>
+            <ConfigurationMapHeading>Last Task Failure</ConfigurationMapHeading>
             {this.getLastTaskFailureInfo()}
           </ConfigurationMapSection>
           <ConfigurationMapSection>
-            <ConfigurationMapHeading>
-              Task Statistics
-            </ConfigurationMapHeading>
+            <ConfigurationMapHeading>Task Statistics</ConfigurationMapHeading>
             {this.getTaskStats()}
           </ConfigurationMapSection>
           {this.getRecentOfferSummary()}

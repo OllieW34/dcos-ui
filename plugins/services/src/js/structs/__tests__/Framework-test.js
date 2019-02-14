@@ -1,7 +1,3 @@
-const JestUtil = require("#SRC/js/utils/JestUtil");
-
-JestUtil.unMockStores(["MesosStateStore"]);
-
 const MesosStateStore = require("#SRC/js/stores/MesosStateStore");
 
 const Framework = require("../Framework");
@@ -61,6 +57,27 @@ describe("Framework", function() {
       });
 
       expect(service.getPackageName()).toEqual(undefined);
+    });
+  });
+
+  describe("#getVersion", function() {
+    it("returns correct version", function() {
+      const service = new Framework({
+        id: "/test/framework",
+        labels: {
+          DCOS_PACKAGE_VERSION: "1"
+        }
+      });
+
+      expect(service.getVersion()).toEqual("1");
+    });
+
+    it("returns undefined if package version is undefined", function() {
+      const service = new Framework({
+        id: "/test/framework"
+      });
+
+      expect(service.getVersion()).toEqual(undefined);
     });
   });
 
@@ -145,6 +162,7 @@ describe("Framework", function() {
     });
 
     it("aggregates the right number of tasks", function() {
+      const getTasksByService = MesosStateStore.getTasksByService;
       MesosStateStore.getTasksByService = function() {
         return [
           {
@@ -205,6 +223,8 @@ describe("Framework", function() {
         tasksOverCapacity: 0,
         tasksUnknown: 0
       });
+
+      MesosStateStore.getTasksByService = getTasksByService;
     });
   });
 
@@ -228,39 +248,38 @@ describe("Framework", function() {
   });
 
   describe("#getResources", function() {
-    it("aggregates child task resources properly", function() {
-      MesosStateStore.getTasksByService = function() {
-        return [
-          {
-            id: "/fake_1",
-            isStartedByMarathon: true,
-            state: "TASK_RUNNING",
-            resources: { cpus: 0.2, mem: 300, gpus: 0 }
-          },
-          {
-            id: "/fake_2",
-            state: "TASK_RUNNING",
-            resources: { cpus: 0.8, mem: 700, gpus: 0, disk: 1000 }
-          },
-          {
-            id: "/fake_2",
-            state: "TASK_FINISHED",
-            resources: { cpus: 0.8, mem: 700, gpus: 0, disk: 0 }
-          }
-        ];
-      };
-
+    it("returns only scheduler resources when used_resources are empty", function() {
       const service = new Framework({
-        instances: 1,
-        cpus: 1,
-        mem: 1000
+        used_resources: null,
+        cpus: 0.2,
+        mem: 300,
+        gpus: 1,
+        disk: 10
       });
 
       expect(service.getResources()).toEqual({
-        cpus: 1.8,
-        mem: 1700,
-        gpus: 0,
-        disk: 1000
+        cpus: 0.2,
+        mem: 300,
+        gpus: 1,
+        disk: 10
+      });
+    });
+
+    it("returns allocated resources + scheduler resources", function() {
+      const service = new Framework({
+        id: "/blip",
+        used_resources: { cpus: 1, mem: 1024, gpus: 0, disk: 10 },
+        cpus: 0.2,
+        mem: 300,
+        gpus: 1,
+        disk: 10
+      });
+
+      expect(service.getResources()).toEqual({
+        cpus: 1.2,
+        mem: 1324,
+        gpus: 1,
+        disk: 20
       });
     });
   });

@@ -15,24 +15,25 @@ const MesosSummaryUtil = {
 
         return memo;
       },
-      { cpus: 0, mem: 0, disk: 0 }
+      { cpus: 0, mem: 0, disk: 0, gpus: 0 }
     );
   },
 
   stateResourcesToResourceStates(stateResources) {
     // Transpose from [{date, resources, totalResources}, ...]
     // to {resource: [{date, value, percentage}, ...], resource: ...}
-    const resources = { cpus: [], mem: [], disk: [] };
+    const resources = { cpus: [], mem: [], disk: [], gpus: [] };
     const resourceTypes = Object.keys(resources);
 
     stateResources.forEach(function(stateResource) {
       resourceTypes.forEach(function(resourceType) {
-        let percentage = null, value = null;
+        let percentage = null,
+          value = null;
 
         if (stateResource.resources != null) {
           const max = Math.max(1, stateResource.totalResources[resourceType]);
           value = stateResource.resources[resourceType];
-          percentage = Maths.round(100 * value / max);
+          percentage = Maths.round((100 * value) / max);
         }
 
         resources[resourceType].push({
@@ -47,8 +48,8 @@ const MesosSummaryUtil = {
   },
 
   filterHostsByService(hosts, frameworkId) {
-    return hosts.filter(function(host) {
-      return host.framework_ids.includes(frameworkId);
+    return hosts.filter(function({ framework_ids = [] }) {
+      return framework_ids.includes(frameworkId);
     });
   },
 
@@ -72,8 +73,8 @@ const MesosSummaryUtil = {
     return {
       frameworks: [],
       slaves: [],
-      used_resources: { cpus: 0, mem: 0, disk: 0 },
-      total_resources: { cpus: 0, mem: 0, disk: 0 }
+      used_resources: { cpus: 0, mem: 0, disk: 0, gpus: 0 },
+      total_resources: { cpus: 0, mem: 0, disk: 0, gpus: 0 }
     };
   },
 

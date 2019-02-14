@@ -2,6 +2,7 @@ import classNames from "classnames";
 import React from "react";
 import { Link } from "react-router";
 
+import { Badge } from "@dcos/ui-kit";
 import NotificationStore from "../stores/NotificationStore";
 
 const PrimarySidebarLink = ({
@@ -15,11 +16,7 @@ const PrimarySidebarLink = ({
 }) => {
   const notificationCount = NotificationStore.getNotificationCount(to);
 
-  let sidebarText = (
-    <span className="sidebar-menu-item-label">
-      {children}
-    </span>
-  );
+  let sidebarText = <span className="sidebar-menu-item-label">{children}</span>;
 
   if (notificationCount > 0) {
     sidebarText = (
@@ -27,7 +24,7 @@ const PrimarySidebarLink = ({
         <span className="sidebar-menu-item-label-text badge-container-text">
           {children}
         </span>
-        <span className="badge">{notificationCount}</span>
+        <Badge>{notificationCount}</Badge>
       </span>
     );
   }
@@ -43,12 +40,18 @@ const PrimarySidebarLink = ({
 
     return (
       <a className={classes} onClick={onClick}>
-        {icon}{sidebarText}
+        {icon}
+        {sidebarText}
       </a>
     );
   }
 
-  return <Link to={to}>{icon}{sidebarText}</Link>;
+  return (
+    <Link to={to}>
+      {icon}
+      {sidebarText}
+    </Link>
+  );
 };
 
 module.exports = PrimarySidebarLink;

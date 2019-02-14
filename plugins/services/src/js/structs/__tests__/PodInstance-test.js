@@ -14,7 +14,7 @@ describe("PodInstance", function() {
   });
 
   describe("#getAgentAddress", function() {
-    it("returns the correct value", function() {
+    it("returns the given agent address", function() {
       const podInstance = new PodInstance({ agentHostname: "agent-1234" });
 
       expect(podInstance.getAgentAddress()).toEqual("agent-1234");
@@ -27,7 +27,7 @@ describe("PodInstance", function() {
   });
 
   describe("#getId", function() {
-    it("returns the correct value", function() {
+    it("returns the given id", function() {
       const podInstance = new PodInstance({ id: "instance-id-1234" });
 
       expect(podInstance.getId()).toEqual("instance-id-1234");
@@ -40,7 +40,7 @@ describe("PodInstance", function() {
   });
 
   describe("#getName", function() {
-    it("returns the correct value", function() {
+    it("returns the given name", function() {
       const podInstance = new PodInstance({ id: "instance-id-1234" });
 
       expect(podInstance.getName()).toEqual(podInstance.getId());
@@ -49,6 +49,32 @@ describe("PodInstance", function() {
     it("returns the correct default value", function() {
       const podInstance = new PodInstance();
       expect(podInstance.getName()).toEqual(podInstance.getId());
+    });
+  });
+
+  describe("#getAgentRegion", function() {
+    it("returns the given region", function() {
+      const podInstance = new PodInstance({ agentRegion: "Region-a" });
+
+      expect(podInstance.getAgentRegion()).toEqual("Region-a");
+    });
+
+    it("returns the correct default value", function() {
+      const podInstance = new PodInstance();
+      expect(podInstance.getAgentRegion()).toEqual("");
+    });
+  });
+
+  describe("#getAgentZone", function() {
+    it("returns the given zone", function() {
+      const podInstance = new PodInstance({ agentZone: "Zone-a" });
+
+      expect(podInstance.getAgentZone()).toEqual("Zone-a");
+    });
+
+    it("returns an empty string as default zone", function() {
+      const podInstance = new PodInstance();
+      expect(podInstance.getAgentZone()).toEqual("");
     });
   });
 
@@ -151,7 +177,7 @@ describe("PodInstance", function() {
   });
 
   describe("#getLastChanged", function() {
-    it("returns the correct value", function() {
+    it("returns the given date", function() {
       const dateString = "2016-08-31T01:01:01.001";
       const podInstance = new PodInstance({ lastChanged: dateString });
 
@@ -165,7 +191,7 @@ describe("PodInstance", function() {
   });
 
   describe("#getLastUpdated", function() {
-    it("returns the correct value", function() {
+    it("returns the given date", function() {
       const dateString = "2016-08-31T01:01:01.001";
       const podInstance = new PodInstance({ lastUpdated: dateString });
 
@@ -179,7 +205,7 @@ describe("PodInstance", function() {
   });
 
   describe("#getResources", function() {
-    it("returns the correct value", function() {
+    it("returns the correct resources", function() {
       const podInstance = new PodInstance({
         resources: { cpus: 0.5, mem: 64 }
       });
@@ -424,6 +450,34 @@ describe("PodInstance", function() {
     it("returns false if not TERMINAL", function() {
       const podInstance = new PodInstance({ status: "running" });
       expect(podInstance.isTerminating()).toBeFalsy();
+    });
+  });
+
+  describe("#getIpAddresses", function() {
+    it("returns an array of IP Addresses", function() {
+      const podInstance = new PodInstance({
+        networks: [{ addresses: ["9.0.0.1"] }]
+      });
+      expect(podInstance.getIpAddresses()).toEqual(["9.0.0.1"]);
+    });
+
+    it("supports multiple networks", function() {
+      const podInstance = new PodInstance({
+        networks: [
+          { addresses: ["9.0.0.1"] },
+          { addresses: ["9.0.0.10", "9.0.0.11"] }
+        ]
+      });
+      expect(podInstance.getIpAddresses()).toEqual([
+        "9.0.0.1",
+        "9.0.0.10",
+        "9.0.0.11"
+      ]);
+    });
+
+    it("returns an empty array", function() {
+      const podInstance = new PodInstance({});
+      expect(podInstance.getIpAddresses()).toEqual([]);
     });
   });
 });

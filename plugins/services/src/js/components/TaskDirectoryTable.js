@@ -89,11 +89,7 @@ class TaskDirectoryTable extends React.Component {
   }
 
   renderStats(prop, directoryItem) {
-    return (
-      <span>
-        {Units.filesize(directoryItem.get(prop), 1)}
-      </span>
-    );
+    return <span>{Units.filesize(directoryItem.get(prop), 1)}</span>;
   }
 
   renderDate(prop, directoryItem) {
@@ -194,7 +190,7 @@ class TaskDirectoryTable extends React.Component {
         <col style={{ width: "150px" }} />
         <col style={{ width: "110px" }} />
         <col style={{ width: "100px" }} />
-        <col style={{ width: "125px" }} />
+        <col style={{ width: "175px" }} />
       </colgroup>
     );
   }

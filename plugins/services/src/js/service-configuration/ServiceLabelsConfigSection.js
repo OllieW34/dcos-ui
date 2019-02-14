@@ -6,8 +6,8 @@ import ServiceConfigBaseSectionDisplay from "./ServiceConfigBaseSectionDisplay";
 
 class ServiceLabelsConfigSection extends ServiceConfigBaseSectionDisplay {
   /**
-  * @override
-  */
+   * @override
+   */
   shouldExcludeItem() {
     const { labels } = this.props.appConfig;
 
@@ -93,7 +93,7 @@ class ServiceLabelsConfigSection extends ServiceConfigBaseSectionDisplay {
             return (
               <Table
                 key="labels-table"
-                className="table table-flush table-borderless-outer table-borderless-inner-columns vertical-align-top table-break-word table-fixed-layout flush-bottom"
+                className="table table-flush table-borderless-outer table-borderless-inner-columns vertical-align-top table-break-word flush-bottom"
                 columns={columns}
                 data={data}
               />

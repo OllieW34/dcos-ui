@@ -66,6 +66,10 @@ module.exports = class ServiceTree extends Tree {
     return null;
   }
 
+  getRegions() {
+    return [];
+  }
+
   getHealth() {
     return this.reduceItems(function(aggregatedHealth, item) {
       if (item instanceof Service) {
@@ -308,23 +312,26 @@ module.exports = class ServiceTree extends Tree {
   }
 
   getName() {
-    return this.getId().split("/").pop();
+    return this.getId()
+      .split("/")
+      .pop();
   }
 
   getResources() {
     return this.reduceItems(
       function(resources, item) {
         if (item instanceof Service) {
-          const { cpus = 0, mem = 0, disk = 0 } = item.getResources();
+          const { cpus = 0, mem = 0, disk = 0, gpus = 0 } = item.getResources();
 
           resources.cpus += cpus;
           resources.mem += mem;
           resources.disk += disk;
+          resources.gpus += gpus;
         }
 
         return resources;
       },
-      { cpus: 0, mem: 0, disk: 0 }
+      { cpus: 0, mem: 0, disk: 0, gpus: 0 }
     );
   }
 
@@ -402,13 +409,15 @@ module.exports = class ServiceTree extends Tree {
   }
 
   getRunningInstancesCount() {
-    return this.flattenItems().getItems().reduce(function(memo, service) {
-      if (service instanceof ServiceTree) {
-        return memo;
-      }
+    return this.flattenItems()
+      .getItems()
+      .reduce(function(memo, service) {
+        if (service instanceof ServiceTree) {
+          return memo;
+        }
 
-      return memo + service.getRunningInstancesCount();
-    }, 0);
+        return memo + service.getRunningInstancesCount();
+      }, 0);
   }
 
   getFrameworks() {

@@ -3,9 +3,11 @@ var SearchDSL = require("#SRC/resources/grammar/SearchDSL.jison");
 var NodesRegionFilter = require("../NodesRegionFilter");
 var List = require("#SRC/js/structs/List");
 
+let thisMockItems;
+
 describe("NodesRegionFilter", function() {
   beforeEach(function() {
-    this.mockItems = [
+    thisMockItems = [
       {
         getRegionName() {
           return "region-1";
@@ -20,15 +22,18 @@ describe("NodesRegionFilter", function() {
   });
 
   it("keeps nodes with specific region mentioned", function() {
-    const nodes = new List({ items: this.mockItems });
+    const nodes = new List({ items: thisMockItems });
     const expr = SearchDSL.parse("region:region-1");
 
     const filters = new DSLFilterList().add(
       new NodesRegionFilter(["region-1"])
     );
 
-    expect(expr.filter(filters, nodes).getItems()[0].getRegionName()).toEqual(
-      this.mockItems[0].getRegionName()
-    );
+    expect(
+      expr
+        .filter(filters, nodes)
+        .getItems()[0]
+        .getRegionName()
+    ).toEqual(thisMockItems[0].getRegionName());
   });
 });

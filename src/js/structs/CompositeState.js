@@ -1,7 +1,6 @@
 import NodesList from "./NodesList";
 import Node from "./Node";
-import ServicesList
-  from "../../../plugins/services/src/js/structs/ServicesList";
+import ServicesList from "../../../plugins/services/src/js/structs/ServicesList";
 
 const BLANK_NODE = {
   health: 3
@@ -84,7 +83,10 @@ class CompositeState {
       return Object.assign({}, oldDatum, matchedNode);
     });
 
-    this.data.slaves = newData;
+    this.data = {
+      ...this.data,
+      slaves: newData
+    };
   }
 
   addState(data) {
@@ -101,8 +103,21 @@ class CompositeState {
     });
   }
 
+  set data(newData) {
+    this._data = newData;
+    this._nodesList = null;
+  }
+
+  get data() {
+    return this._data;
+  }
+
   getNodesList() {
-    return new NodesList({ items: this.data.slaves });
+    if (this._nodesList === null) {
+      this._nodesList = new NodesList({ items: this.data.slaves });
+    }
+
+    return this._nodesList;
   }
 
   getMasterNode() {

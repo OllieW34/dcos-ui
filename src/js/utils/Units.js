@@ -4,11 +4,11 @@ const Units = {
   formatResource(resource, value) {
     value = Maths.round(value, 2);
 
-    if (resource !== "cpus") {
+    if (resource !== "cpus" && resource !== "gpus") {
       value = Units.filesize(value * 1024 * 1024, 1);
     }
 
-    return value;
+    return value || 0;
   },
 
   filesize(size, decimals, threshold, multiplier, units) {

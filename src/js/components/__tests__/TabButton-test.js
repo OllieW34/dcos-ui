@@ -1,56 +1,50 @@
-const React = require("react");
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { shallow, mount } from "enzyme";
 
 const TabButton = require("../TabButton");
 
+let thisClickHandler, thisInstance;
+
 describe("TabButton", function() {
   beforeEach(function() {
-    this.clickHandler = jasmine.createSpy("click handler");
+    thisClickHandler = jasmine.createSpy("click handler");
   });
 
   it("calls the onClick prop with ID when clicked", function() {
-    this.instance = TestUtils.renderIntoDocument(
-      <TabButton label="foo" onClick={this.clickHandler} id="foo" />
+    thisInstance = mount(
+      <TabButton label="foo" onClick={thisClickHandler} id="foo" />
     );
 
     // Click the TabButton's label
-    TestUtils.Simulate.click(
-      ReactDOM.findDOMNode(this.instance).querySelector(
-        ".menu-tabbed-item-label"
-      )
-    );
+    thisInstance.find(".menu-tabbed-item-label").simulate("click");
 
-    expect(this.clickHandler).toHaveBeenCalledWith("foo");
+    expect(thisClickHandler).toHaveBeenCalledWith("foo");
   });
 
   it("clones nested TabButton instances with onClick and activeTab props", function() {
-    this.instance = TestUtils.renderIntoDocument(
+    thisInstance = shallow(
       <TabButton
         activeTab="foo"
         label="foo"
-        onClick={this.clickHandler}
+        onClick={thisClickHandler}
         id="foo"
       >
         <TabButton label="bar" id="bar" />
       </TabButton>
     );
 
-    const nestedInstance = TestUtils.scryRenderedComponentsWithType(
-      this.instance,
-      TabButton
-    )[0];
+    const nestedInstance = thisInstance.find(TabButton).first();
 
-    expect(nestedInstance.props.activeTab).toEqual("foo");
-    expect(nestedInstance.props.onClick).toEqual(this.clickHandler);
+    expect(nestedInstance.prop("activeTab")).toEqual("foo");
+    expect(nestedInstance.prop("onClick")).toEqual(thisClickHandler);
   });
 
   it("calls the parent onClick when clicking a nested TabButton", function() {
-    this.instance = TestUtils.renderIntoDocument(
+    thisInstance = mount(
       <TabButton
         activeTab="foo"
         label="foo"
-        onClick={this.clickHandler}
+        onClick={thisClickHandler}
         id="foo"
       >
         <TabButton label="bar" id="bar" />
@@ -58,12 +52,11 @@ describe("TabButton", function() {
     );
 
     // Click the TabButton's label
-    TestUtils.Simulate.click(
-      ReactDOM.findDOMNode(this.instance).querySelector(
-        ".menu-tabbed-item .menu-tabbed-item .menu-tabbed-item-label"
-      )
-    );
+    thisInstance
+      .find(".menu-tabbed-item .menu-tabbed-item .menu-tabbed-item-label")
+      .at(1)
+      .simulate("click");
 
-    expect(this.clickHandler).toHaveBeenCalledWith("bar");
+    expect(thisClickHandler).toHaveBeenCalledWith("bar");
   });
 });

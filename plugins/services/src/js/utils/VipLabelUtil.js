@@ -10,6 +10,11 @@ const VipLabelUtil = {
         vipValue = `${appId}:${vipPort}`;
       }
 
+      const vipMatch = vipValue.match(/(.+):\d+/);
+      if (vipMatch) {
+        vipValue = `${vipMatch[1]}:${vipPort}`;
+      }
+
       return Object.assign({}, labels, { [vipLabel]: vipValue });
     }
 
@@ -21,6 +26,14 @@ const VipLabelUtil = {
     }
 
     return labels;
+  },
+
+  findVip(labels = {}) {
+    return Object.entries(labels).find(([key, _]) => key.match(/^(vip|VIP)/));
+  },
+
+  defaultVip(index) {
+    return `VIP_${index}`;
   }
 };
 

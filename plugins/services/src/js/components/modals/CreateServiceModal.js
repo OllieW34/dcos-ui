@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 import { Confirm } from "reactjs-components";
@@ -13,12 +13,9 @@ import DCOSStore from "#SRC/js/stores/DCOSStore";
 import AppValidators from "#SRC/resources/raml/marathon/v2/types/app.raml";
 import DataValidatorUtil from "#SRC/js/utils/DataValidatorUtil";
 import FullScreenModal from "#SRC/js/components/modals/FullScreenModal";
-import FullScreenModalHeader
-  from "#SRC/js/components/modals/FullScreenModalHeader";
-import FullScreenModalHeaderActions
-  from "#SRC/js/components/modals/FullScreenModalHeaderActions";
-import FullScreenModalHeaderTitle
-  from "#SRC/js/components/modals/FullScreenModalHeaderTitle";
+import FullScreenModalHeader from "#SRC/js/components/modals/FullScreenModalHeader";
+import FullScreenModalHeaderActions from "#SRC/js/components/modals/FullScreenModalHeaderActions";
+import FullScreenModalHeaderTitle from "#SRC/js/components/modals/FullScreenModalHeaderTitle";
 import ModalHeading from "#SRC/js/components/modals/ModalHeading";
 import PodValidators from "#SRC/resources/raml/marathon/v2/types/pod.raml";
 import ToggleButton from "#SRC/js/components/ToggleButton";
@@ -48,21 +45,15 @@ import MarathonAppValidators from "../../validators/MarathonAppValidators";
 import MarathonErrorUtil from "../../utils/MarathonErrorUtil";
 import CreateServiceModalServicePicker from "./CreateServiceModalServicePicker";
 import CreateServiceModalForm from "./CreateServiceModalForm";
-import ServiceConfigDisplay
-  from "../../service-configuration/ServiceConfigDisplay";
+import ServiceConfigDisplay from "../../service-configuration/ServiceConfigDisplay";
 import GeneralServiceFormSection from "../forms/GeneralServiceFormSection";
 import HealthChecksFormSection from "../forms/HealthChecksFormSection";
-import JSONSingleContainerReducers
-  from "../../reducers/JSONSingleContainerReducers";
+import JSONSingleContainerReducers from "../../reducers/JSONSingleContainerReducers";
 import JSONMultiContainerParser from "../../reducers/JSONMultiContainerParser";
-import JSONMultiContainerReducers
-  from "../../reducers/JSONMultiContainerReducers";
-import JSONSingleContainerParser
-  from "../../reducers/JSONSingleContainerParser";
-import MultiContainerNetworkingFormSection
-  from "../forms/MultiContainerNetworkingFormSection";
-import MultiContainerVolumesFormSection
-  from "../forms/MultiContainerVolumesFormSection";
+import JSONMultiContainerReducers from "../../reducers/JSONMultiContainerReducers";
+import JSONSingleContainerParser from "../../reducers/JSONSingleContainerParser";
+import MultiContainerNetworkingFormSection from "../forms/MultiContainerNetworkingFormSection";
+import MultiContainerVolumesFormSection from "../forms/MultiContainerVolumesFormSection";
 import NetworkingFormSection from "../forms/NetworkingFormSection";
 import ServiceErrorTypes from "../../constants/ServiceErrorTypes";
 import VolumesFormSection from "../forms/VolumesFormSection";
@@ -159,7 +150,7 @@ class CreateServiceModal extends Component {
     // Skip update if there was no change to props
     if (
       nextProps.location.pathname === location.pathname &&
-      deepEqual(nextProps.params, params)
+      isEqual(nextProps.params, params)
     ) {
       return;
     }
@@ -379,7 +370,17 @@ class CreateServiceModal extends Component {
   }
 
   handleServiceChange(newService) {
-    this.setState({ serviceSpec: newService, hasChangesApplied: true });
+    // If there were previous error messages visible it's better to revalidate
+    // on each change going forward
+    const formErrors = this.state.submitFailed
+      ? this.validateServiceSpec(newService)
+      : [];
+
+    this.setState({
+      serviceSpec: newService,
+      hasChangesApplied: true,
+      formErrors
+    });
   }
 
   handleServiceErrorsChange(errors) {
@@ -460,15 +461,17 @@ class CreateServiceModal extends Component {
   }
 
   handleServiceReview() {
-    const errors = this.getFormErrors();
-    if (errors.filter(error => !error.isPermissive).length === 0) {
+    if (!this.anyCriticalFormErrors()) {
       this.setState({
         apiErrors: [],
+        formErrors: [],
         serviceReviewActive: true
       });
     } else {
       this.setState({
-        showAllErrors: true
+        showAllErrors: true,
+        submitFailed: true,
+        formErrors: this.validateServiceSpec(this.state.serviceSpec)
       });
     }
   }
@@ -491,13 +494,24 @@ class CreateServiceModal extends Component {
   }
 
   /**
-   * This function combines the errors received from marathon and the errors
-   * produced by the form into a unified error array
-   *
+   * Determines whether or not the form can be submitted
+   * @returns {boolean} critical errors are present
+   */
+  anyCriticalFormErrors() {
+    const formErrors = this.validateServiceSpec(this.state.serviceSpec);
+    const criticalFormErrors = formErrors.filter(error => !error.isPermissive);
+
+    return (
+      criticalFormErrors.length > 0 || this.state.serviceFormErrors.length > 0
+    );
+  }
+
+  /**
+   * This function returns errors produced by the form validators
+   * @param {Object} serviceSpec The service spec to validate
    * @returns {Array} - An array of error objects
    */
-  getFormErrors() {
-    const { serviceFormErrors, serviceSpec } = this.state;
+  validateServiceSpec(serviceSpec) {
     let validationErrors = [];
 
     const appValidators = APP_VALIDATORS.concat(
@@ -525,7 +539,7 @@ class CreateServiceModal extends Component {
       );
     }
 
-    return validationErrors.concat(serviceFormErrors);
+    return validationErrors;
   }
 
   /**
@@ -535,7 +549,9 @@ class CreateServiceModal extends Component {
    * @returns {Array} - An array of error objects
    */
   getAllErrors() {
-    return this.state.apiErrors.concat(this.getFormErrors());
+    return this.state.apiErrors
+      .concat(this.state.formErrors)
+      .concat(this.state.serviceFormErrors);
   }
 
   getHeader() {
@@ -573,9 +589,7 @@ class CreateServiceModal extends Component {
           actions={this.getSecondaryActions()}
           type="secondary"
         />
-        <FullScreenModalHeaderTitle>
-          {title}
-        </FullScreenModalHeaderTitle>
+        <FullScreenModalHeaderTitle>{title}</FullScreenModalHeaderTitle>
         <FullScreenModalHeaderActions
           actions={this.getPrimaryActions()}
           type="primary"
@@ -785,7 +799,6 @@ class CreateServiceModal extends Component {
         {
           className: "button-primary flush-vertical",
           clickHandler: this.handleServiceReview,
-          disabled: this.getAllErrors().length > 0,
           label: "Review & Run"
         }
       ];
@@ -796,7 +809,6 @@ class CreateServiceModal extends Component {
         {
           className: "button-primary flush-vertical",
           clickHandler: this.handleServiceReview,
-          disabled: this.getAllErrors().length > 0,
           label: "Review & Run"
         }
       ];
@@ -830,6 +842,7 @@ class CreateServiceModal extends Component {
     const newState = {
       activeTab: null,
       apiErrors: [],
+      formErrors: [], // Errors detected by form validation
       hasChangesApplied: false,
       isConfirmOpen: false,
       isJSONModeActive: false,
@@ -843,7 +856,8 @@ class CreateServiceModal extends Component {
       servicePickerActive: !isEdit, // Switch directly to form/json if edit
       serviceReviewActive: false,
       serviceFormHasErrors: false,
-      showAllErrors: false
+      showAllErrors: false,
+      submitFailed: false // Tried to submit form and form validation failed
     };
 
     return newState;
@@ -911,7 +925,8 @@ class CreateServiceModal extends Component {
           showHeader={true}
         >
           <p>
-            Are you sure you want to leave this page? Any data you entered will be lost.
+            Are you sure you want to leave this page? Any data you entered will
+            be lost.
           </p>
         </Confirm>
       </FullScreenModal>

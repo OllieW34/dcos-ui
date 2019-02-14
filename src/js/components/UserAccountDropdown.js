@@ -1,18 +1,8 @@
-import { Dropdown } from "reactjs-components";
 import React from "react";
-import UserAccountDropdownTrigger from "./UserAccountDropdownTrigger";
+import PropTypes from "prop-types";
+import { Dropdown } from "reactjs-components";
 
-class UserAccountDropdown extends React.Component {
-  getMenuItems() {
-    return [this.props.menuItems];
-  }
-
-  getTrigger() {
-    const { clusterName } = this.props;
-
-    return <UserAccountDropdownTrigger primaryContent={clusterName} />;
-  }
-
+export default class UserAccountDropdown extends React.Component {
   handleItemSelection(item) {
     if (item.onClick) {
       item.onClick();
@@ -23,7 +13,7 @@ class UserAccountDropdown extends React.Component {
     return (
       <Dropdown
         trigger={this.getTrigger()}
-        dropdownMenuClassName="user-account-dropdown-menu dropdown-menu"
+        dropdownMenuClassName="user-account-dropdown-menu dropdown-menu header-bar-dropdown-menu"
         dropdownMenuListClassName="user-account-dropdown-list dropdown-menu-list"
         items={this.getMenuItems()}
         onItemSelection={this.handleItemSelection}
@@ -34,4 +24,7 @@ class UserAccountDropdown extends React.Component {
   }
 }
 
-module.exports = UserAccountDropdown;
+UserAccountDropdown.propTypes = {
+  menuItems: PropTypes.arrayOf(PropTypes.object),
+  trigger: PropTypes.node
+};

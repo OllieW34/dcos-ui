@@ -1,4 +1,4 @@
-import DeepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import PropTypes from "prop-types";
 import React from "react";
 import ReactDOM from "react-dom";
@@ -47,9 +47,7 @@ class CollapsingString extends React.Component {
       return false;
     }
 
-    return (
-      !DeepEqual(this.state, nextState) || !DeepEqual(this.props, nextProps)
-    );
+    return !isEqual(this.state, nextState) || !isEqual(this.props, nextProps);
   }
 
   getParentWidth() {
@@ -131,7 +129,7 @@ class CollapsingString extends React.Component {
     let stringEnding = null;
 
     if (endLength == null) {
-      endLength = Math.floor(fullString.length * 1 / 3);
+      endLength = Math.floor((fullString.length * 1) / 3);
     }
 
     if (this.state.collapsed) {

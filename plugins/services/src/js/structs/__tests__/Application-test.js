@@ -114,7 +114,8 @@ describe("Application", function() {
     it("returns correct images", function() {
       const service = new Application({
         labels: {
-          DCOS_PACKAGE_METADATA: "eyJpbWFnZXMiOiB7ICJpY29uLXNtYWxsIjogImZvby1zbWFsbC5wbmciLCAiaWNvbi1tZWRpdW0iOiAiZm9vLW1lZGl1bS5wbmciLCAiaWNvbi1sYXJnZSI6ICJmb28tbGFyZ2UucG5nIn19"
+          DCOS_PACKAGE_METADATA:
+            "eyJpbWFnZXMiOiB7ICJpY29uLXNtYWxsIjogImZvby1zbWFsbC5wbmciLCAiaWNvbi1tZWRpdW0iOiAiZm9vLW1lZGl1bS5wbmciLCAiaWNvbi1sYXJnZSI6ICJmb28tbGFyZ2UucG5nIn19"
         }
       });
 
@@ -572,6 +573,22 @@ describe("Application", function() {
       const item = new Application({ foo: "bar", baz: "qux", uris: [] });
       const spec = item.getSpec();
       expect(JSON.stringify(spec)).toEqual('{"foo":"bar","baz":"qux"}');
+    });
+  });
+
+  describe("#findTaskById", function() {
+    it("returns the task", function() {
+      const service = new Application({
+        tasks: [{ id: "foo" }]
+      });
+      expect(service.findTaskById("foo")).toEqual({ id: "foo" });
+    });
+
+    it("returns undefined", function() {
+      const service = new Application({
+        tasks: [{ id: "foo" }]
+      });
+      expect(service.findTaskById("unknown")).toEqual(undefined);
     });
   });
 });

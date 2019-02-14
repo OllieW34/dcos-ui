@@ -4,8 +4,9 @@ import StringUtil from "./StringUtil";
 
 const DefaultResourceTypes = {
   cpus: { label: "CPU", colorID: 0 },
-  mem: { label: "Memory", colorID: 6 },
-  disk: { label: "Disk", colorID: 3 }
+  mem: { label: "Mem", colorID: 6 },
+  disk: { label: "Disk", colorID: 3 },
+  gpus: { label: "GPU", colorID: 8 }
 };
 
 // Let's create an instance of a Node with our default resources
@@ -16,7 +17,8 @@ const fakeUsedResources = Object.keys(DefaultResourceTypes).reduce(function(
   memo[resource] = 0;
 
   return memo;
-}, {});
+},
+{});
 const fakeNode = new Node({ used_resources: fakeUsedResources });
 
 const usedColors = Object.keys(DefaultResourceTypes).map(function(resource) {
@@ -55,7 +57,8 @@ const ResourcesUtil = {
       }
     }
 
-    let resources = Object.keys(item.get("used_resources"));
+    const usedResources = item.getResources();
+    let resources = Object.keys(usedResources);
 
     if (excludeList.length > 0) {
       resources = resources.filter(function(resource) {

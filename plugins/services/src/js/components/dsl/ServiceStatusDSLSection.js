@@ -4,19 +4,18 @@ import React from "react";
 import DSLCombinerTypes from "#SRC/js/constants/DSLCombinerTypes";
 import DSLExpression from "#SRC/js/structs/DSLExpression";
 import DSLExpressionPart from "#SRC/js/structs/DSLExpressionPart";
-import DSLFormWithExpressionUpdates
-  from "#SRC/js/components/DSLFormWithExpressionUpdates";
+import DSLFormWithExpressionUpdates from "#SRC/js/components/DSLFormWithExpressionUpdates";
 import DSLUtil from "#SRC/js/utils/DSLUtil";
 import FieldInput from "#SRC/js/components/form/FieldInput";
 import FieldLabel from "#SRC/js/components/form/FieldLabel";
 import FormGroup from "#SRC/js/components/form/FormGroup";
 
 const EXPRESSION_PARTS = {
-  is_running: DSLExpressionPart.attribute("is", "running"),
+  is_deleting: DSLExpressionPart.attribute("is", "deleting"),
   is_deploying: DSLExpressionPart.attribute("is", "deploying"),
-  is_stopped: DSLExpressionPart.attribute("is", "stopped"),
-  is_delayed: DSLExpressionPart.attribute("is", "delayed"),
-  is_waiting: DSLExpressionPart.attribute("is", "waiting")
+  is_recovering: DSLExpressionPart.attribute("is", "recovering"),
+  is_running: DSLExpressionPart.attribute("is", "running"),
+  is_stopped: DSLExpressionPart.attribute("is", "stopped")
 };
 
 class ServiceStatusDSLSection extends React.Component {
@@ -34,7 +33,6 @@ class ServiceStatusDSLSection extends React.Component {
         onChange={onChange}
         parts={EXPRESSION_PARTS}
       >
-
         <label>Status</label>
         <div className="row">
           <div className="column-6">
@@ -59,12 +57,12 @@ class ServiceStatusDSLSection extends React.Component {
               </FieldLabel>
               <FieldLabel>
                 <FieldInput
-                  checked={data.is_stopped}
+                  checked={data.is_recovering}
                   disabled={!enabled}
-                  name="is_stopped"
+                  name="is_recovering"
                   type="checkbox"
                 />
-                Stopped
+                Recovering
               </FieldLabel>
             </FormGroup>
           </div>
@@ -72,21 +70,21 @@ class ServiceStatusDSLSection extends React.Component {
             <FormGroup>
               <FieldLabel>
                 <FieldInput
-                  checked={data.is_delayed}
+                  checked={data.is_stopped}
                   disabled={!enabled}
-                  name="is_delayed"
+                  name="is_stopped"
                   type="checkbox"
                 />
-                Delayed
+                Stopped
               </FieldLabel>
               <FieldLabel>
                 <FieldInput
-                  checked={data.is_waiting}
+                  checked={data.is_deleting}
                   disabled={!enabled}
-                  name="is_waiting"
+                  name="is_deleting"
                   type="checkbox"
                 />
-                Waiting
+                Deleting
               </FieldLabel>
             </FormGroup>
           </div>

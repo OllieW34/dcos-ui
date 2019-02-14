@@ -1,6 +1,8 @@
 const UniversePackage = require("../UniversePackage");
 const UniversePackagesList = require("../UniversePackagesList");
 
+let thisPackages, thisPackagesList;
+
 describe("UniversePackagesList", function() {
   describe("#constructor", function() {
     it("creates instances of UniversePackage", function() {
@@ -20,6 +22,25 @@ describe("UniversePackagesList", function() {
       expect(items[0].get("name")).toEqual("bar");
     });
 
+    it("sorts exact matches first", function() {
+      var items = [{ name: "kafka-beta" }, { name: "kafka" }];
+      var list = new UniversePackagesList({ items });
+      items = list.filterItemsByText("kafka").getItems();
+      expect(items.length).toEqual(2);
+      expect(items[0].get("name")).toEqual("kafka");
+    });
+
+    it("sorts certified packages first", function() {
+      var items = [
+        { name: "certified kafka", selected: true }, // without certification, this package would be ordered first.
+        { name: "a kafka", selected: false }
+      ];
+      var list = new UniversePackagesList({ items });
+      items = list.filterItemsByText("kafka").getItems();
+      expect(items.length).toEqual(2);
+      expect(items[0].isCertified()).toBeTruthy();
+    });
+
     it("filters by description", function() {
       var items = [{ description: "foo" }, { description: "bar" }];
       var list = new UniversePackagesList({ items });
@@ -29,12 +50,17 @@ describe("UniversePackagesList", function() {
     });
 
     it("filters by tags", function() {
-      var items = [{ tags: ["foo", "bar"] }, { tags: ["foo"] }, { tags: [] }];
+      var items = [
+        { tags: ["word", "foo", "bar"] },
+        { tags: ["foo"] },
+        { tags: [] }
+      ];
+
       var list = new UniversePackagesList({ items });
       items = list.filterItemsByText("foo").getItems();
       expect(items.length).toEqual(2);
-      expect(items[0].get("tags")).toEqual(["foo", "bar"]);
-      expect(items[1].get("tags")).toEqual(["foo"]);
+      expect(items[0].get("tags")).toEqual(["foo"]);
+      expect(items[1].get("tags")).toEqual(["word", "foo", "bar"]);
     });
 
     it("handles filter by tags with null elements", function() {
@@ -46,21 +72,21 @@ describe("UniversePackagesList", function() {
 
   describe("#getSelectedAndNonSelectedPackages", function() {
     beforeEach(function() {
-      this.packages = [
+      thisPackages = [
         { name: "isSelected", selected: true },
         { name: "isNotSelected", selected: false },
         { name: "isNotSelected2", selected: false }
       ];
-      this.packagesList = new UniversePackagesList({ items: this.packages });
+      thisPackagesList = new UniversePackagesList({ items: thisPackages });
     });
 
     it("returns the correct number of selected packages", function() {
-      var result = this.packagesList.getSelectedAndNonSelectedPackages();
+      var result = thisPackagesList.getSelectedAndNonSelectedPackages();
       expect(result.selectedPackages.getItems().length).toEqual(1);
     });
 
     it("returns the correct number of non-selected packages", function() {
-      var result = this.packagesList.getSelectedAndNonSelectedPackages();
+      var result = thisPackagesList.getSelectedAndNonSelectedPackages();
       expect(result.nonSelectedPackages.getItems().length).toEqual(2);
     });
   });

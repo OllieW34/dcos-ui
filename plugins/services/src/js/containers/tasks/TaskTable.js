@@ -28,6 +28,7 @@ const tableColumnClasses = {
   logs: "task-table-column-logs",
   cpus: "task-table-column-cpus",
   mem: "task-table-column-mem",
+  gpus: "task-table-column-gpus",
   updated: "task-table-column-updated",
   version: "task-table-column-version"
 };
@@ -52,7 +53,7 @@ class TaskTable extends React.Component {
   }
 
   getStatValue(task, prop) {
-    return task.resources[prop];
+    return task.resources[prop] || 0;
   }
 
   getStatusValue(task) {
@@ -177,6 +178,17 @@ class TaskTable extends React.Component {
         sortFunction
       },
       {
+        cacheCell: true,
+        className,
+        getValue: this.getStatValue,
+        headerClassName: className,
+        heading,
+        prop: "gpus",
+        render: this.renderStats,
+        sortable: true,
+        sortFunction
+      },
+      {
         className,
         headerClassName: className,
         heading,
@@ -184,24 +196,6 @@ class TaskTable extends React.Component {
         render: ResourceTableUtil.renderUpdated,
         sortable: true,
         sortFunction
-      },
-      {
-        cacheCell: true,
-        className,
-        getValue: this.getVersionValue,
-        headerClassName: className,
-        heading,
-        prop: "version",
-        render: this.renderVersion,
-        sortable: true,
-        sortFunction: TableUtil.getSortFunction("id", task => {
-          const version = this.getVersionValue(task);
-          if (version == null) {
-            return null;
-          }
-
-          return new Date(version);
-        })
       }
     ];
   }
@@ -220,8 +214,8 @@ class TaskTable extends React.Component {
         <col className={tableColumnClasses.logs} />
         <col className={tableColumnClasses.cpus} />
         <col className={tableColumnClasses.mem} />
+        <col className={tableColumnClasses.gpus} />
         <col className={tableColumnClasses.updated} />
-        <col className={tableColumnClasses.version} />
       </colgroup>
     );
   }
@@ -265,7 +259,9 @@ class TaskTable extends React.Component {
       const title = task[prop];
       const { id, nodeID } = this.props.params;
 
-      let linkTo = `/services/detail/${encodeURIComponent(id)}/tasks/${task.id}`;
+      let linkTo = `/services/detail/${encodeURIComponent(id)}/tasks/${
+        task.id
+      }`;
       if (nodeID != null) {
         linkTo = `/nodes/${nodeID}/tasks/${task.id}`;
       }
@@ -286,7 +282,9 @@ class TaskTable extends React.Component {
     const title = task.name || task.id;
     const { id, nodeID } = this.props.params;
 
-    let linkTo = `/services/detail/${encodeURIComponent(id)}/tasks/${task.id}/logs`;
+    let linkTo = `/services/detail/${encodeURIComponent(id)}/tasks/${
+      task.id
+    }/logs`;
     if (nodeID != null) {
       linkTo = `/nodes/${nodeID}/tasks/${task.id}/logs`;
     }
@@ -345,9 +343,7 @@ class TaskTable extends React.Component {
 
   renderStats(prop, task) {
     return (
-      <span>
-        {Units.formatResource(prop, this.getStatValue(task, prop))}
-      </span>
+      <span>{Units.formatResource(prop, this.getStatValue(task, prop))}</span>
     );
   }
 
@@ -357,9 +353,7 @@ class TaskTable extends React.Component {
 
     return (
       <div className="flex-box flex-box-align-vertical-center table-cell-flex-box">
-        <span className={statusLabelClasses}>
-          {this.getStatusValue(task)}
-        </span>
+        <span className={statusLabelClasses}>{this.getStatusValue(task)}</span>
       </div>
     );
   }
@@ -421,11 +415,7 @@ class TaskTable extends React.Component {
 
     const localeVersion = new Date(version).toLocaleString();
 
-    return (
-      <span>
-        {localeVersion}
-      </span>
-    );
+    return <span>{localeVersion}</span>;
   }
 
   render() {
@@ -463,7 +453,8 @@ TaskTable.propTypes = {
 };
 
 TaskTable.defaultProps = {
-  className: "table table-flush table-borderless-outer table-borderless-inner-columns flush-bottom",
+  className:
+    "table table-flush table-borderless-outer table-borderless-inner-columns flush-bottom",
   tasks: []
 };
 

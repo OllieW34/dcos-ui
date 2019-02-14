@@ -1,9 +1,11 @@
 const CompositeState = require("../../structs/CompositeState");
 const Node = require("../../structs/Node");
 const NodesList = require("../../structs/NodesList");
+const Service = require("../../../../plugins/services/src/js/structs/Service");
+const ServicesList = require("../../../../plugins/services/src/js/structs/ServicesList");
 const ResourcesUtil = require("../ResourcesUtil");
 
-function createFnWithResources(used_resources) {
+function createFnWithNodeResources(used_resources) {
   const instance = new Node({ used_resources });
 
   return function() {
@@ -11,13 +13,21 @@ function createFnWithResources(used_resources) {
   };
 }
 
+function createFnWithServicesResources(used_resources) {
+  const instance = new Service({ used_resources });
+
+  return function() {
+    return new ServicesList({ items: [instance] });
+  };
+}
+
 describe("ResourcesUtil", function() {
   beforeEach(function() {
-    CompositeState.getNodesList = createFnWithResources({
+    CompositeState.getNodesList = createFnWithNodeResources({
       cpus: 0,
       mem: 0,
       disk: 0,
-      gpu: 0,
+      gpus: 0,
       bananas: 0
     });
   });
@@ -28,7 +38,7 @@ describe("ResourcesUtil", function() {
         return new NodesList();
       };
       CompositeState.getServicesList = function() {
-        return [];
+        return new ServicesList();
       };
     });
 
@@ -44,50 +54,44 @@ describe("ResourcesUtil", function() {
     });
 
     it("gets available resources from a node", function() {
-      CompositeState.getNodesList = createFnWithResources({ foo: 0, bar: 0 });
+      CompositeState.getNodesList = createFnWithNodeResources({
+        foo: 0,
+        bar: 0
+      });
 
       const resources = ResourcesUtil.getAvailableResources();
       expect(resources).toEqual(["foo", "bar"]);
     });
 
-    it("gets available resources from a service", function() {
-      CompositeState.getServiceList = createFnWithResources({ baz: 0, qux: 0 });
-
-      const resources = ResourcesUtil.getAvailableResources();
-      expect(resources).toEqual(["baz", "qux"]);
-    });
-
-    it("allows exclusion of resources", function() {
-      CompositeState.getServiceList = createFnWithResources({
-        foo: 0,
-        bar: 0,
-        baz: 0,
-        qux: 0
+    describe("without nodes", function() {
+      beforeEach(function() {
+        CompositeState.getNodesList = function() {
+          return new NodesList();
+        };
       });
 
-      const resources = ResourcesUtil.getAvailableResources(["bar", "qux"]);
-      expect(resources).toEqual(["foo", "baz"]);
+      it("gets available resources from a service", function() {
+        CompositeState.getServiceList = createFnWithServicesResources({});
+
+        const resources = ResourcesUtil.getAvailableResources();
+        expect(resources).toEqual(["cpus", "mem", "gpus", "disk"]);
+      });
+
+      it("allows exclusion of resources", function() {
+        const resources = ResourcesUtil.getAvailableResources(["gpus", "disk"]);
+        expect(resources).toEqual(["cpus", "mem"]);
+      });
     });
   });
 
   describe("#getAdditionalResources", function() {
-    beforeEach(function() {
-      CompositeState.getNodesList = createFnWithResources({
-        cpus: 0,
-        mem: 0,
-        disk: 0,
-        gpu: 0,
-        bananas: 0
-      });
-    });
-
     it("returns resources that are unknown to the application", function() {
       const resources = ResourcesUtil.getAdditionalResources();
-      expect(resources).toEqual(["bananas", "gpu"]);
+      expect(resources).toEqual(["bananas"]);
     });
 
     it("returns an empty array if there is no unknown resources", function() {
-      CompositeState.getNodesList = createFnWithResources({
+      CompositeState.getNodesList = createFnWithNodeResources({
         cpus: 0,
         mem: 0,
         disk: 0
@@ -101,7 +105,7 @@ describe("ResourcesUtil", function() {
   describe("#getResourceLabel", function() {
     it("returns label for known resource", function() {
       const label = ResourcesUtil.getResourceLabel("mem");
-      expect(label).toEqual("Memory");
+      expect(label).toEqual("Mem");
     });
 
     it("returns label for unknown resource", function() {
@@ -122,8 +126,8 @@ describe("ResourcesUtil", function() {
         bananas: "Bananas",
         cpus: "CPU",
         disk: "Disk",
-        gpu: "GPU",
-        mem: "Memory"
+        gpus: "GPU",
+        mem: "Mem"
       });
     });
   });
@@ -162,7 +166,7 @@ describe("ResourcesUtil", function() {
         cpus: 0,
         mem: 6,
         disk: 3,
-        gpu: 2,
+        gpus: 8,
         bananas: 1
       });
     });

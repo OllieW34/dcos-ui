@@ -2,23 +2,25 @@ const RequestUtil = require("mesosphere-shared-reactjs").RequestUtil;
 
 const ActionTypes = require("../../constants/ActionTypes");
 const AppDispatcher = require("../../events/AppDispatcher");
-const Config = require("../../config/Config");
+const Config = require("#SRC/js/config/Config").default;
 const EventTypes = require("../../constants/EventTypes");
 const HealthUnitsList = require("../../structs/HealthUnitsList");
 const UnitHealthStore = require("../UnitHealthStore");
 const unitsFixture = require("../../../../tests/_fixtures/unit-health/units.json");
 
+let thisRequestFn, thisUnitsFixture;
+
 describe("UnitHealthStore", function() {
   beforeEach(function() {
-    this.requestFn = RequestUtil.json;
+    thisRequestFn = RequestUtil.json;
     RequestUtil.json = function(handlers) {
       handlers.success(unitsFixture);
     };
-    this.unitsFixture = Object.assign({}, unitsFixture);
+    thisUnitsFixture = Object.assign({}, unitsFixture);
   });
 
   afterEach(function() {
-    RequestUtil.json = this.requestFn;
+    RequestUtil.json = thisRequestFn;
   });
 
   it("returns an instance of HealthUnitsList", function() {
@@ -33,7 +35,7 @@ describe("UnitHealthStore", function() {
     Config.useFixtures = true;
     UnitHealthStore.fetchUnits();
     var units = UnitHealthStore.getUnits().getItems();
-    expect(units.length).toEqual(this.unitsFixture.units.length);
+    expect(units.length).toEqual(thisUnitsFixture.units.length);
     Config.useFixtures = false;
   });
 

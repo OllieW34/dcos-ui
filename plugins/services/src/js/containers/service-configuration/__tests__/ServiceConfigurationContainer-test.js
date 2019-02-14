@@ -1,12 +1,15 @@
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { mount } from "enzyme";
 
 const Application = require("../../../structs/Application");
 const ServiceConfigurationContainer = require("../ServiceConfigurationContainer");
 const ServiceConfigDisplay = require("../../../service-configuration/ServiceConfigDisplay");
+
+jest.mock("#SRC/js/events/MetronomeActions", () => ({
+  fetchJobs: jest.fn()
+}));
+
+let thisInstance;
 
 describe("ServiceConfigurationContainer", function() {
   const service = new Application({
@@ -46,28 +49,19 @@ describe("ServiceConfigurationContainer", function() {
   });
 
   beforeEach(function() {
-    this.container = global.document.createElement("div");
-    this.instance = ReactDOM.render(
+    thisInstance = mount(
       <ServiceConfigurationContainer
         onEditClick={function() {}}
         service={service}
-      />,
-      this.container
+      />
     );
-  });
-
-  afterEach(function() {
-    ReactDOM.unmountComponentAtNode(this.container);
   });
 
   describe("#render", function() {
     it("renders correct id", function() {
-      var serviceSpecView = TestUtils.findRenderedComponentWithType(
-        this.instance,
-        ServiceConfigDisplay
-      );
+      const serviceSpecView = thisInstance.find(ServiceConfigDisplay);
 
-      expect(serviceSpecView).toBeDefined();
+      expect(serviceSpecView.exists()).toBeTruthy();
     });
   });
 });

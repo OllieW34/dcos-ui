@@ -6,16 +6,24 @@ import Config from "#SRC/js/config/Config";
 import DOMUtils from "#SRC/js/utils/DOMUtils";
 import EventTypes from "#SRC/js/constants/EventTypes";
 import MetadataStore from "#SRC/js/stores/MetadataStore";
+import Util from "#SRC/js/utils/Util";
 
 import { ANALYTICS_LOAD_TIMEOUT } from "./constants/PluginConstants";
 import Actions from "./actions/Actions";
 
 const SDK = require("./SDK").getSDK();
 
-const segmentScript = `!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error('Segment snippet included twice.');else{analytics.invoked=!0;analytics.methods=['trackSubmit','trackClick','trackLink','trackForm','pageview','identify','group','track','ready','alias','page','once','off','on'];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t){var e=document.createElement('script');e.type="text/javascript";e.async=!0;e.src=('https:'===document.location.protocol?'https://':'http://')+'cdn.segment.com/analytics.js/v1/'+t+'/analytics.min.js';var n=document.getElementsByTagName('script')[0];n.parentNode.insertBefore(e,n)};analytics.SNIPPET_VERSION="3.0.1";analytics.load("${Config.analyticsKey}");}}();`;
+const segmentScript = `!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error('Segment snippet included twice.');else{analytics.invoked=!0;analytics.methods=['trackSubmit','trackClick','trackLink','trackForm','pageview','identify','group','track','ready','alias','page','once','off','on'];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t){var e=document.createElement('script');e.type="text/javascript";e.async=!0;e.src=('https:'===document.location.protocol?'https://':'http://')+'cdn.segment.com/analytics.js/v1/'+t+'/analytics.min.js';var n=document.getElementsByTagName('script')[0];n.parentNode.insertBefore(e,n)};analytics.SNIPPET_VERSION="3.0.1";analytics.load("${
+  Config.analyticsKey
+}");}}();`;
 
 module.exports = {
-  filters: ["pluginsLoadedCheck", "userFormModalFooter"],
+  filters: [
+    "pluginsLoadedCheck",
+    "userFormModalFooter",
+    "userLoginPolicy",
+    "userAddPolicy"
+  ],
 
   actions: [
     "pluginsConfigured",
@@ -62,26 +70,30 @@ module.exports = {
   pluginsConfigured() {
     // Ensure analytics is actually ready, because in #pluginsLoadedCheck we
     // may skip the check so that we don't completely block the applicaiton
-    global.analytics.ready(() => {
-      const updateTrackJSConfiguration = () => {
-        global.trackJs.configure({ version: MetadataStore.version });
-        global.trackJs.addMetadata("version", MetadataStore.version);
-      };
+    const metadata =
+      Util.findNestedPropertyInObject(this, "configuration.metadata") || {};
 
-      if (this.configuration && this.configuration.metadata) {
-        const config = this.configuration.metadata;
-        Object.keys(config).forEach(metaKey => {
-          global.trackJs.addMetadata(metaKey, config[metaKey]);
+    global.analytics.ready(() => {
+      const setContext = () => {
+        if (!global.Raven) {
+          return;
+        }
+
+        global.Raven.setTagsContext({
+          ...metadata,
+          environment: process.env.NODE_ENV,
+          dcosVersion: MetadataStore.version,
+          dcosVariant: MetadataStore.variant
         });
-      }
+      };
 
       if (!MetadataStore.version) {
         MetadataStore.addChangeListener(
           EventTypes.DCOS_METADATA_CHANGE,
-          updateTrackJSConfiguration
+          setContext
         );
       } else {
-        updateTrackJSConfiguration();
+        setContext();
       }
     });
   },
@@ -100,5 +112,33 @@ module.exports = {
 
   userFormModalFooter() {
     return null;
+  },
+
+  userLoginPolicy() {
+    return (
+      <p>
+        By logging in to DC/OS you understand we will process personal
+        information in accordance with our{" "}
+        <a href="https://mesosphere.com/privacy/" target="_blank">
+          Privacy Policy
+        </a>.
+      </p>
+    );
+  },
+
+  userAddPolicy() {
+    return (
+      <p className="form-control-feedback">
+        By adding a user you understand we will process personal information in
+        accordance with our{" "}
+        <a
+          className="reset-color"
+          href="https://mesosphere.com/privacy/"
+          target="_blank"
+        >
+          Privacy Policy
+        </a>.
+      </p>
+    );
   }
 };

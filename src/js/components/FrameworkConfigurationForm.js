@@ -8,19 +8,17 @@ import TabButton from "#SRC/js/components/TabButton";
 import TabButtonList from "#SRC/js/components/TabButtonList";
 import Tabs from "#SRC/js/components/Tabs";
 import Util from "#SRC/js/utils/Util";
+import ErrorsAlert from "#SRC/js/components/ErrorsAlert";
 import JSONEditor from "#SRC/js/components/JSONEditor";
 import FluidGeminiScrollbar from "#SRC/js/components/FluidGeminiScrollbar";
-import PageHeaderNavigationDropdown
-  from "#SRC/js/components/PageHeaderNavigationDropdown";
+import PageHeaderNavigationDropdown from "#SRC/js/components/PageHeaderNavigationDropdown";
 import UniversePackage from "#SRC/js/structs/UniversePackage";
 import CosmosErrorMessage from "#SRC/js/components/CosmosErrorMessage";
 import SchemaField from "#SRC/js/components/SchemaField";
 import StringUtil from "#SRC/js/utils/StringUtil";
-import PlacementConstraintsSchemaField
-  from "#SRC/js/components/PlacementConstraintsSchemaField";
+import PlacementConstraintsSchemaField from "#SRC/js/components/PlacementConstraintsSchemaField";
 import YamlEditorSchemaField from "#SRC/js/components/YamlEditorSchemaField";
-import FrameworkConfigurationConstants
-  from "#SRC/js/constants/FrameworkConfigurationConstants";
+import FrameworkConfigurationConstants from "#SRC/js/constants/FrameworkConfigurationConstants";
 
 MountService.MountService.registerComponent(
   PlacementConstraintsSchemaField,
@@ -39,11 +37,14 @@ const METHODS_TO_BIND = [
   "handleDropdownNavigationSelection",
   "handleTabChange",
   "handleFormChange",
+  "handleFormError",
   "handleJSONChange",
   "handleBadgeClick",
-  "validate"
+  "validate",
+  "jsonSchemaErrorList"
 ];
-class FrameworkConfigurationForm extends Component {
+
+export default class FrameworkConfigurationForm extends Component {
   constructor(props) {
     super(props);
 
@@ -60,23 +61,23 @@ class FrameworkConfigurationForm extends Component {
     event.stopPropagation();
 
     const { errorSchema } = this.state;
-    const { formData } = this.props;
+    const { formData, handleFocusFieldChange } = this.props;
 
-    const fieldsWithErrors = Object.keys(
-      errorSchema[activeTab]
-    ).filter(field => {
-      return (
-        errorSchema[activeTab][field].__errors &&
-        errorSchema[activeTab][field].__errors.length > 0
-      );
-    });
+    const fieldsWithErrors = Object.keys(errorSchema[activeTab]).filter(
+      field => {
+        return (
+          errorSchema[activeTab][field].__errors &&
+          errorSchema[activeTab][field].__errors.length > 0
+        );
+      }
+    );
 
     // first field with errors in the current tab
     const fieldToFocus = Object.keys(formData[activeTab]).find(field => {
       return fieldsWithErrors.includes(field);
     });
 
-    this.props.handleFocusFieldChange(activeTab, fieldToFocus);
+    handleFocusFieldChange(activeTab, fieldToFocus);
   }
 
   getFormTabList() {
@@ -148,7 +149,10 @@ class FrameworkConfigurationForm extends Component {
   }
 
   writeErrors(formData, schema, isRequired, errors) {
-    if (Util.isObject(formData)) {
+    if (schema == null) {
+      return;
+    }
+    if (Util.isObject(formData) && schema.properties) {
       Object.keys(formData).forEach(property => {
         this.writeErrors(
           formData[property],
@@ -183,16 +187,33 @@ class FrameworkConfigurationForm extends Component {
   }
 
   handleFormChange(form) {
-    const { formData, errorSchema } = form;
+    const { formData } = form;
 
-    const formErrors = {};
-    Object.keys(errorSchema).forEach(tab => {
-      formErrors[tab] = this.getTotalErrorsForLevel(errorSchema[tab]);
-    });
-
-    this.props.onFormErrorChange(formErrors);
     this.props.onFormDataChange(formData);
-    this.setState({ errorSchema });
+
+    if (this.props.liveValidate) {
+      // When liveValidate is true, errorSchema is available for each change
+      this.probeErrorsSchemaForm();
+    }
+  }
+
+  handleFormError() {
+    this.probeErrorsSchemaForm();
+  }
+
+  probeErrorsSchemaForm() {
+    const { errorSchema } = this.schemaForm.state;
+
+    if (errorSchema) {
+      const formErrors = {};
+      Object.keys(errorSchema).forEach(tab => {
+        formErrors[tab] = this.getTotalErrorsForLevel(errorSchema[tab]);
+      });
+
+      this.setState({ errorSchema }, () => {
+        this.props.onFormErrorChange(formErrors);
+      });
+    }
   }
 
   validate(formData, errors) {
@@ -236,6 +257,16 @@ class FrameworkConfigurationForm extends Component {
       });
   }
 
+  jsonSchemaErrorList(props) {
+    return (
+      <ErrorsAlert
+        errors={props.errors.map(error => {
+          return { message: error.stack };
+        })}
+      />
+    );
+  }
+
   render() {
     const {
       packageDetails,
@@ -243,7 +274,10 @@ class FrameworkConfigurationForm extends Component {
       formData,
       activeTab,
       deployErrors,
-      defaultConfigWarning
+      defaultConfigWarning,
+      onFormSubmit,
+      liveValidate,
+      submitRef
     } = this.props;
 
     const TitleField = props => {
@@ -277,6 +311,8 @@ class FrameworkConfigurationForm extends Component {
     const jsonEditorClasses = classNames("modal-full-screen-side-panel", {
       "is-visible": jsonEditorActive
     });
+
+    const schema = packageDetails.getConfig();
 
     let errorsAlert = null;
     if (deployErrors) {
@@ -313,24 +349,28 @@ class FrameworkConfigurationForm extends Component {
                   vertical={true}
                   className={"menu-tabbed-container-fixed"}
                 >
-                  <TabButtonList>
-                    {this.getFormTabList()}
-                  </TabButtonList>
+                  <TabButtonList>{this.getFormTabList()}</TabButtonList>
                   <div className="menu-tabbed-view-container">
                     {errorsAlert}
                     {defaultConfigWarningMessage}
                     <SchemaForm
-                      schema={packageDetails.getConfig()}
+                      schema={schema}
                       formData={formData}
                       onChange={this.handleFormChange}
+                      onSubmit={onFormSubmit}
+                      onError={this.handleFormError}
                       uiSchema={this.getUiSchema()}
                       fields={{ SchemaField, TitleField }}
-                      liveValidate={true}
+                      liveValidate={liveValidate}
                       validate={this.validate}
-                      showErrorList={false}
+                      ErrorList={this.jsonSchemaErrorList}
                       transformErrors={this.transformErrors}
+                      noHtml5Validate={true}
+                      ref={form => {
+                        this.schemaForm = form;
+                      }}
                     >
-                      <div />
+                      <button ref={submitRef} className="hidden" />
                     </SchemaForm>
                   </div>
                 </Tabs>
@@ -356,6 +396,12 @@ class FrameworkConfigurationForm extends Component {
   }
 }
 
+FrameworkConfigurationForm.defaultProps = {
+  deployErrors: null,
+  submitRef: () => {},
+  liveValidate: false
+};
+
 FrameworkConfigurationForm.propTypes = {
   packageDetails: PropTypes.instanceOf(UniversePackage).isRequired,
   jsonEditorActive: PropTypes.bool.isRequired,
@@ -366,9 +412,15 @@ FrameworkConfigurationForm.propTypes = {
   deployErrors: PropTypes.object,
   onFormDataChange: PropTypes.func.isRequired,
   onFormErrorChange: PropTypes.func.isRequired,
+  onFormSubmit: PropTypes.func.isRequired,
   handleActiveTabChange: PropTypes.func.isRequired,
   handleFocusFieldChange: PropTypes.func.isRequired,
-  defaultConfigWarning: PropTypes.string
-};
+  defaultConfigWarning: PropTypes.string,
 
-module.exports = FrameworkConfigurationForm;
+  // Will be populated with a reference to the form submit button in order
+  // to enable the form to be controlled externally
+  //
+  // See https://github.com/mozilla-services/react-jsonschema-form#tips-and-tricks
+  submitRef: PropTypes.func,
+  liveValidate: PropTypes.bool
+};

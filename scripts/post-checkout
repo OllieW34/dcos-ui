@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+SCRIPT_PATH="$(dirname "$0")/$(dirname "$(readlink "$0")")"
+
+"${SCRIPT_PATH}/validate-engine-versions"

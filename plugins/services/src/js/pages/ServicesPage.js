@@ -6,6 +6,8 @@ import Icon from "#SRC/js/components/Icon";
 import RouterUtil from "#SRC/js/utils/RouterUtil";
 import TabsMixin from "#SRC/js/mixins/TabsMixin";
 
+import CosmosPackagesStore from "#SRC/js/stores/CosmosPackagesStore";
+
 var ServicesPage = React.createClass({
   contextTypes: {
     router: routerShape
@@ -39,6 +41,10 @@ var ServicesPage = React.createClass({
     this.updateCurrentTab();
   },
 
+  componentDidMount() {
+    CosmosPackagesStore.fetchAvailablePackages();
+  },
+
   componentDidUpdate() {
     this.updateCurrentTab();
   },
@@ -65,11 +71,7 @@ var ServicesPage = React.createClass({
       return null;
     }
 
-    return (
-      <ul className="menu-tabbed">
-        {this.tabs_getRoutedTabs()}
-      </ul>
-    );
+    return <ul className="menu-tabbed">{this.tabs_getRoutedTabs()}</ul>;
   },
 
   render() {

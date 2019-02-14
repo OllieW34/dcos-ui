@@ -3,12 +3,10 @@ import React from "react";
 import { routerShape } from "react-router";
 
 import ConfigurationMap from "#SRC/js/components/ConfigurationMap";
-import ConfigurationMapHeading
-  from "#SRC/js/components/ConfigurationMapHeading";
+import ConfigurationMapHeading from "#SRC/js/components/ConfigurationMapHeading";
 import ConfigurationMapLabel from "#SRC/js/components/ConfigurationMapLabel";
 import ConfigurationMapRow from "#SRC/js/components/ConfigurationMapRow";
-import ConfigurationMapSection
-  from "#SRC/js/components/ConfigurationMapSection";
+import ConfigurationMapSection from "#SRC/js/components/ConfigurationMapSection";
 import ConfigurationMapValue from "#SRC/js/components/ConfigurationMapValue";
 
 import EndpointClipboardTrigger from "./EndpointClipboardTrigger";
@@ -63,7 +61,9 @@ class ServiceConnectionEndpointList extends React.Component {
 
     if (hostPortValue) {
       return (
-        <EndpointClipboardTrigger command={getDisplayValue(hostPortValue)} />
+        <EndpointClipboardTrigger
+          command={getDisplayValue(hostPortValue.toString())}
+        />
       );
     }
 
@@ -90,7 +90,11 @@ class ServiceConnectionEndpointList extends React.Component {
     const portValue = portDefinition.containerPort;
 
     if (portValue) {
-      return <EndpointClipboardTrigger command={getDisplayValue(portValue)} />;
+      return (
+        <EndpointClipboardTrigger
+          command={getDisplayValue(portValue.toString())}
+        />
+      );
     }
 
     return getDisplayValue(portValue);
@@ -100,7 +104,7 @@ class ServiceConnectionEndpointList extends React.Component {
     if (portDefinition.servicePort) {
       return (
         <EndpointClipboardTrigger
-          command={getDisplayValue(portDefinition.servicePort)}
+          command={getDisplayValue(portDefinition.servicePort.toString())}
         />
       );
     }
@@ -112,41 +116,31 @@ class ServiceConnectionEndpointList extends React.Component {
     return (
       <div>
         <ConfigurationMapRow key="protocol">
-          <ConfigurationMapLabel>
-            Protocol
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Protocol</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getProtocolValue(portDefinition)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow key="container-port">
-          <ConfigurationMapLabel>
-            Container Port
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Container Port</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getContainerPortValue(portDefinition)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow key="host-port">
-          <ConfigurationMapLabel>
-            Host Port
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Host Port</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getHostPortValue(portDefinition, service)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow key="service-port">
-          <ConfigurationMapLabel>
-            Service Port
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Service Port</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getServicePortValue(portDefinition)}
           </ConfigurationMapValue>
         </ConfigurationMapRow>
         <ConfigurationMapRow key="load-balanced-address">
-          <ConfigurationMapLabel>
-            Load Balanced Address
-          </ConfigurationMapLabel>
+          <ConfigurationMapLabel>Load Balanced Address</ConfigurationMapLabel>
           <ConfigurationMapValue>
             {this.getLoadBalancedAddressValue(portDefinition)}
           </ConfigurationMapValue>

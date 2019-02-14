@@ -58,6 +58,8 @@ const DeclinedOffersUtil = {
       declinedOffersMap[DeclinedOffersReasons.UNFULFILLED_CONSTRAINT];
     const cpuOfferSummary =
       declinedOffersMap[DeclinedOffersReasons.INSUFFICIENT_CPU];
+    const gpuOfferSummary =
+      declinedOffersMap[DeclinedOffersReasons.INSUFFICIENT_GPU];
     const memOfferSummary =
       declinedOffersMap[DeclinedOffersReasons.INSUFFICIENT_MEM];
     const diskOfferSummary =
@@ -75,6 +77,8 @@ const DeclinedOffersUtil = {
           // Tally the total number of requested resources.
           accumulator.cpus +=
             Util.findNestedPropertyInObject(container, "resources.cpus") || 0;
+          accumulator.gpus +=
+            Util.findNestedPropertyInObject(container, "resources.gpus") || 0;
           accumulator.mem +=
             Util.findNestedPropertyInObject(container, "resources.mem") || 0;
           accumulator.disk +=
@@ -97,20 +101,19 @@ const DeclinedOffersUtil = {
             pod,
             "scheduling.placement.acceptedResourceRoles"
           ) || ["*"],
-          constraints: Util.findNestedPropertyInObject(
-            pod,
-            "scheduling.placement.constraints"
-          ) || [],
-          cpus: Util.findNestedPropertyInObject(
-            pod,
-            "executorResources.cpus"
-          ) || 0,
-          mem: Util.findNestedPropertyInObject(pod, "executorResources.mem") ||
-            0,
-          disk: Util.findNestedPropertyInObject(
-            pod,
-            "executorResources.disk"
-          ) || 0,
+          constraints:
+            Util.findNestedPropertyInObject(
+              pod,
+              "scheduling.placement.constraints"
+            ) || [],
+          cpus:
+            Util.findNestedPropertyInObject(pod, "executorResources.cpus") || 0,
+          gpus:
+            Util.findNestedPropertyInObject(pod, "executorResources.gpus") || 0,
+          mem:
+            Util.findNestedPropertyInObject(pod, "executorResources.mem") || 0,
+          disk:
+            Util.findNestedPropertyInObject(pod, "executorResources.disk") || 0,
           ports: []
         }
       );
@@ -122,6 +125,7 @@ const DeclinedOffersUtil = {
         ) || ["*"],
         constraints: Util.findNestedPropertyInObject(app, "constraints") || [],
         cpus: app.cpus || 0,
+        gpus: app.gpus || 0,
         mem: app.mem || 0,
         disk: app.disk || 0,
         ports: [app.ports] || [[]]
@@ -135,30 +139,36 @@ const DeclinedOffersUtil = {
         matched: roleOfferSummary.processed - roleOfferSummary.declined
       },
       constraints: {
-        requested: requestedResources.constraints
-          .map((constraint = []) => {
-            if (Array.isArray(constraint)) {
-              return constraint.join(":");
-            }
+        requested:
+          requestedResources.constraints
+            .map((constraint = []) => {
+              if (Array.isArray(constraint)) {
+                return constraint.join(":");
+              }
 
-            // pod
-            const { fieldName, operator, value } = constraint;
+              // pod
+              const { fieldName, operator, value } = constraint;
 
-            return [fieldName, operator, value]
-              .filter(function(value) {
-                return value && value !== "";
-              })
-              .join(":");
-          })
-          .join(", ") || UNAVAILABLE_TEXT,
+              return [fieldName, operator, value]
+                .filter(function(value) {
+                  return value && value !== "";
+                })
+                .join(":");
+            })
+            .join(", ") || UNAVAILABLE_TEXT,
         offers: constraintOfferSummary.processed,
-        matched: constraintOfferSummary.processed -
-          constraintOfferSummary.declined
+        matched:
+          constraintOfferSummary.processed - constraintOfferSummary.declined
       },
       cpus: {
         requested: requestedResources.cpus,
         offers: cpuOfferSummary.processed,
         matched: cpuOfferSummary.processed - cpuOfferSummary.declined
+      },
+      gpus: {
+        requested: requestedResources.gpus,
+        offers: gpuOfferSummary.processed,
+        matched: gpuOfferSummary.processed - gpuOfferSummary.declined
       },
       mem: {
         requested: requestedResources.mem,
@@ -171,11 +181,12 @@ const DeclinedOffersUtil = {
         matched: diskOfferSummary.processed - diskOfferSummary.declined
       },
       ports: {
-        requested: requestedResources.ports
-          .map((resourceArr = []) => {
-            return resourceArr.join(", ");
-          })
-          .join(", ") || UNAVAILABLE_TEXT,
+        requested:
+          requestedResources.ports
+            .map((resourceArr = []) => {
+              return resourceArr.join(", ");
+            })
+            .join(", ") || UNAVAILABLE_TEXT,
         offers: portOfferSummary.processed,
         matched: portOfferSummary.processed - portOfferSummary.declined
       }

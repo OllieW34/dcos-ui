@@ -87,7 +87,7 @@ class DeclinedOffersTable extends React.Component {
         "text-danger": isResourceUnmatched
       });
 
-      let requestedResource = summary[prop].requested;
+      let requestedResource = (summary[prop] || { requested: 0 }).requested;
       let receivedResource = row.offered[prop];
 
       let requestedResourceSuffix = "";
@@ -132,16 +132,16 @@ class DeclinedOffersTable extends React.Component {
       const tooltipContent = (
         <div>
           <div>
-            <strong>Requested</strong>{": "}
+            <strong>Requested</strong>
+            {": "}
             {requestedResource}
             {` ${requestedResourceSuffix}`}
           </div>
           <div>
-            <strong>Received</strong>{": "}
+            <strong>Received</strong>
+            {": "}
             <span className={receivedResourceClasses}>{receivedResource}</span>
-            <span className="text-nowrap">
-              {` ${receivedResourceSuffix}`}
-            </span>
+            <span className="text-nowrap">{` ${receivedResourceSuffix}`}</span>
           </div>
         </div>
       );
@@ -157,15 +157,16 @@ class DeclinedOffersTable extends React.Component {
   getColGroup() {
     return (
       <colgroup>
+        <col style={{ width: "135px" }} />
+        <col style={{ width: "9%" }} />
+        <col style={{ width: "15%" }} />
         <col />
-        <col style={{ width: "10%" }} />
-        <col style={{ width: "10%" }} />
-        <col className="hidden-large-up" style={{ width: "30%" }} />
-        <col className="hidden-medium-down" style={{ width: "10%" }} />
-        <col className="hidden-medium-down" style={{ width: "10%" }} />
-        <col className="hidden-medium-down" style={{ width: "10%" }} />
-        <col style={{ width: "10%" }} />
-        <col className="hidden-small-down" />
+        <col className="hidden-large-up" style={{ width: "9%" }} />
+        <col className="hidden-medium-down" style={{ width: "9%" }} />
+        <col className="hidden-medium-down" style={{ width: "9%" }} />
+        <col className="hidden-medium-down" style={{ width: "9%" }} />
+        <col />
+        <col className="hidden-small-down" style={{ width: "15%" }} />
       </colgroup>
     );
   }
@@ -181,9 +182,14 @@ class DeclinedOffersTable extends React.Component {
           const node = MesosStateStore.getNodeFromHostname(hostname);
 
           return (
-            <Link className="table-cell-link-primary" to={`/nodes/${node.id}`}>
-              {hostname}
-            </Link>
+            <Tooltip content={hostname} maxWidth={400} wrapText={true}>
+              <Link
+                className="table-cell-link-primary"
+                to={`/nodes/${node.id}`}
+              >
+                {hostname}
+              </Link>
+            </Tooltip>
           );
         },
         sortable: true
@@ -291,6 +297,19 @@ class DeclinedOffersTable extends React.Component {
         )
       },
       {
+        heading: this.getColumnHeadingFn("GPU"),
+        prop: "gpus",
+        className: this.getColumnClassNameFn("text-align-center"),
+        render: this.getMatchedOfferRenderFn(
+          DeclinedOffersReasons.INSUFFICIENT_GPU
+        ),
+        sortable: true,
+        sortFunction: TableUtil.getSortFunction(
+          "timestamp",
+          this.getMatchedResourcesSortFn(DeclinedOffersReasons.INSUFFICIENT_GPU)
+        )
+      },
+      {
         heading: this.getColumnHeadingFn("Port", "PRT"),
         prop: "ports",
         className: this.getColumnClassNameFn("text-align-center"),
@@ -323,7 +342,7 @@ class DeclinedOffersTable extends React.Component {
     return (
       <MountService.Mount type="DeclinedOffersTable">
         <Table
-          className="table table-flush table-borderless-outer table-borderless-inner-columns table-header-nowrap table-break-word table-hover flush-bottom"
+          className="table table-flush table-borderless-outer table-borderless-inner-columns table-break-word table-hover flush-bottom"
           colGroup={this.getColGroup()}
           columns={this.getColumns()}
           data={offers}

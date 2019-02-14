@@ -86,7 +86,8 @@ class VirtualNetworksTabContent extends mixin(StoreMixin) {
       <AlertPanel>
         <AlertPanelHeader>No virtual networks detected</AlertPanelHeader>
         <p className="flush">
-          There a currently no other virtual networks found on your datacenter. Virtual networks are configured during setup of your DC/OS cluster.
+          There a currently no other virtual networks found on your datacenter.
+          Virtual networks are configured during setup of your DC/OS cluster.
         </p>
       </AlertPanel>
     );
@@ -103,8 +104,9 @@ class VirtualNetworksTabContent extends mixin(StoreMixin) {
 
     return overlayList.filterItems(function(overlay) {
       return (
-        overlay.getName().includes(searchString) ||
-        overlay.getSubnet().includes(searchString)
+        (overlay.getName() && overlay.getName().includes(searchString)) ||
+        (overlay.getSubnet() && overlay.getSubnet().includes(searchString)) ||
+        (overlay.getSubnet6() && overlay.getSubnet6().includes(searchString))
       );
     });
   }

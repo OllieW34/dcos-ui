@@ -1,13 +1,15 @@
+import JobStatus from "#PLUGINS/jobs/src/js/constants/JobStatus";
+
 import { cleanJobJSON } from "../utils/CleanJSONUtil";
 import DateUtil from "../utils/DateUtil";
 import Item from "./Item";
 import JobRunList from "./JobRunList";
-import JobStatus from "../constants/JobStatus";
 import {
   DEFAULT_CPUS,
   DEFAULT_DISK,
   DEFAULT_MEM
 } from "../constants/JobResources";
+import { findNestedPropertyInObject } from "../utils/Util";
 
 module.exports = class Job extends Item {
   getActiveRuns() {
@@ -48,13 +50,18 @@ module.exports = class Job extends Item {
 
   getJobRuns() {
     const activeRuns = this.get("activeRuns") || [];
-    const { failedFinishedRuns = [], successfulFinishedRuns = [] } = this.get(
-      "history"
-    ) || {};
+    const { failedFinishedRuns = [], successfulFinishedRuns = [] } =
+      this.get("history") || {};
 
     return new JobRunList({
       items: [].concat(activeRuns, failedFinishedRuns, successfulFinishedRuns)
     });
+  }
+
+  getParameters() {
+    return (
+      findNestedPropertyInObject(this.get("run"), "docker.parameters") || []
+    );
   }
 
   getLabels() {
@@ -98,7 +105,9 @@ module.exports = class Job extends Item {
   }
 
   getName() {
-    return this.getId().split(".").pop();
+    return this.getId()
+      .split(".")
+      .pop();
   }
 
   getSchedules() {

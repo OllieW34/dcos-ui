@@ -3,24 +3,19 @@ import React, { Component } from "react";
 import { Confirm } from "reactjs-components";
 
 import FullScreenModal from "#SRC/js/components/modals/FullScreenModal";
-import FullScreenModalHeader
-  from "#SRC/js/components/modals/FullScreenModalHeader";
-import FullScreenModalHeaderActions
-  from "#SRC/js/components/modals/FullScreenModalHeaderActions";
-import FullScreenModalHeaderTitle
-  from "#SRC/js/components/modals/FullScreenModalHeaderTitle";
-import FullScreenModalHeaderSubTitle
-  from "#SRC/js/components/modals/FullScreenModalHeaderSubTitle";
+import FullScreenModalHeader from "#SRC/js/components/modals/FullScreenModalHeader";
+import FullScreenModalHeaderActions from "#SRC/js/components/modals/FullScreenModalHeaderActions";
+import FullScreenModalHeaderTitle from "#SRC/js/components/modals/FullScreenModalHeaderTitle";
+import FullScreenModalHeaderSubTitle from "#SRC/js/components/modals/FullScreenModalHeaderSubTitle";
 import ToggleButton from "#SRC/js/components/ToggleButton";
 import ModalHeading from "#SRC/js/components/modals/ModalHeading";
 import UniversePackage from "#SRC/js/structs/UniversePackage";
 import Util from "#SRC/js/utils/Util";
+import { getFirstTabAndField } from "#SRC/js/utils/FrameworkConfigurationUtil";
 import StringUtil from "#SRC/js/utils/StringUtil";
 import CosmosErrorMessage from "#SRC/js/components/CosmosErrorMessage";
-import FrameworkConfigurationForm
-  from "#SRC/js/components/FrameworkConfigurationForm";
-import FrameworkConfigurationReviewScreen
-  from "#SRC/js/components/FrameworkConfigurationReviewScreen";
+import FrameworkConfigurationForm from "#SRC/js/components/FrameworkConfigurationForm";
+import FrameworkConfigurationReviewScreen from "#SRC/js/components/FrameworkConfigurationReviewScreen";
 
 const METHODS_TO_BIND = [
   "handleJSONToggle",
@@ -30,13 +25,16 @@ const METHODS_TO_BIND = [
   "handleActiveTabChange",
   "handleFocusFieldChange",
   "handleCloseConfirmModal",
-  "handleConfirmGoBack"
+  "handleConfirmGoBack",
+  "handleFormSubmit"
 ];
-class FrameworkConfiguration extends Component {
+
+export default class FrameworkConfiguration extends Component {
   constructor(props) {
     super(props);
 
-    const { activeTab, focusField } = this.getFirstTabAndField();
+    const { packageDetails } = this.props;
+    const { activeTab, focusField } = getFirstTabAndField(packageDetails);
 
     this.state = {
       reviewActive: false,
@@ -44,7 +42,8 @@ class FrameworkConfiguration extends Component {
       focusField,
       jsonEditorActive: false,
       isConfirmOpen: false,
-      isOpen: true
+      isOpen: true,
+      liveValidate: false
     };
 
     METHODS_TO_BIND.forEach(method => {
@@ -71,27 +70,11 @@ class FrameworkConfiguration extends Component {
   }
 
   handleEditConfigurationButtonClick() {
-    const { activeTab, focusField } = this.getFirstTabAndField();
-
-    this.setState({ reviewActive: false, activeTab, focusField });
-  }
-
-  getFirstTabAndField() {
-    const { packageDetails } = this.props;
-    const schema = packageDetails.getConfig();
-
-    const [activeTab] = Object.keys(schema.properties);
-    const [focusField] = Object.keys(
-      Util.findNestedPropertyInObject(
-        schema,
-        `properties.${activeTab}.properties`
-      )
+    const { activeTab, focusField } = getFirstTabAndField(
+      this.props.packageDetails
     );
 
-    return {
-      activeTab,
-      focusField
-    };
+    this.setState({ reviewActive: false, activeTab, focusField });
   }
 
   handleJSONToggle() {
@@ -124,7 +107,13 @@ class FrameworkConfiguration extends Component {
       return;
     }
 
-    this.setState({ reviewActive: true });
+    // Only live validate once the form is submitted.
+    this.setState({ liveValidate: true }, () => {
+      // This is the prescribed method for submitting a react-jsonschema-form
+      // using an external control.
+      // https://github.com/mozilla-services/react-jsonschema-form#tips-and-tricks
+      this.submitButton.click();
+    });
   }
 
   handleConfirmGoBack() {
@@ -135,6 +124,10 @@ class FrameworkConfiguration extends Component {
       // navigate away once the animation is over.
       setTimeout(handleGoBack, 300);
     });
+  }
+
+  handleFormSubmit() {
+    this.setState({ liveValidate: false, reviewActive: true });
   }
 
   getSecondaryActions() {
@@ -199,7 +192,9 @@ class FrameworkConfiguration extends Component {
     const preInstallNotes = packageDetails.getPreInstallNotes();
     if (preInstallNotes) {
       const message = StringUtil.parseMarkdown(preInstallNotes);
-      message.__html = `<strong>Preinstall Notes: </strong>${message.__html} ${this.getTermsAndConditions().__html}`;
+      message.__html = `<strong>Preinstall Notes: </strong>${message.__html} ${
+        this.getTermsAndConditions().__html
+      }`;
 
       return (
         <div
@@ -255,7 +250,6 @@ class FrameworkConfiguration extends Component {
           {defaultConfigWarningMessage}
           <FrameworkConfigurationReviewScreen
             frameworkData={formData}
-            title={"Configuration"}
             onEditClick={this.handleEditConfigurationButtonClick}
           />
         </div>
@@ -325,7 +319,10 @@ class FrameworkConfiguration extends Component {
           deployErrors={deployErrors}
           onFormDataChange={onFormDataChange}
           onFormErrorChange={onFormErrorChange}
+          onFormSubmit={this.handleFormSubmit}
           defaultConfigWarning={defaultConfigWarning}
+          submitRef={el => (this.submitButton = el)} // ref forwarding https://reactjs.org/docs/forwarding-refs.html
+          liveValidate={this.state.liveValidate}
         />
       );
     }
@@ -350,7 +347,8 @@ class FrameworkConfiguration extends Component {
           showHeader={true}
         >
           <p>
-            Are you sure you want to leave this page? Any data you entered will be lost.
+            Are you sure you want to leave this page? Any data you entered will
+            be lost.
           </p>
         </Confirm>
       </FullScreenModal>
@@ -370,5 +368,3 @@ FrameworkConfiguration.propTypes = {
   deployErrors: PropTypes.object,
   defaultConfigWarning: PropTypes.string
 };
-
-module.exports = FrameworkConfiguration;

@@ -1,4 +1,3 @@
-import classNames from "classnames";
 import qs from "query-string";
 import mixin from "reactjs-mixin";
 import { Link, routerShape } from "react-router";
@@ -9,20 +8,22 @@ import { StoreMixin } from "mesosphere-shared-reactjs";
 import { Dropdown, Tooltip, Modal } from "reactjs-components";
 
 import Icon from "#SRC/js/components/Icon";
-import Breadcrumb from "../../components/Breadcrumb";
-import BreadcrumbTextContent from "../../components/BreadcrumbTextContent";
-import CosmosPackagesStore from "../../stores/CosmosPackagesStore";
-import defaultServiceImage
-  from "../../../../plugins/services/src/img/icon-service-default-large@2x.png";
-import Image from "../../components/Image";
-import ImageViewer from "../../components/ImageViewer";
-import Loader from "../../components/Loader";
-import MetadataStore from "../../stores/MetadataStore";
-import Page from "../../components/Page";
-import RequestErrorMsg from "../../components/RequestErrorMsg";
-import StringUtil from "../../utils/StringUtil";
+import Breadcrumb from "#SRC/js/components/Breadcrumb";
+import BreadcrumbTextContent from "#SRC/js/components/BreadcrumbTextContent";
+import CosmosPackagesStore from "#SRC/js/stores/CosmosPackagesStore";
+import defaultServiceImage from "#PLUGINS/services/src/img/icon-service-default-large@2x.png";
+import Image from "#SRC/js/components/Image";
+import ImageViewer from "#SRC/js/components/ImageViewer";
+import Loader from "#SRC/js/components/Loader";
+import MetadataStore from "#SRC/js/stores/MetadataStore";
+import Page from "#SRC/js/components/Page";
+import RequestErrorMsg from "#SRC/js/components/RequestErrorMsg";
+import StringUtil from "#SRC/js/utils/StringUtil";
+import { Badge } from "@dcos/ui-kit";
 
-const PackageDetailBreadcrumbs = ({ cosmosPackage }) => {
+const semver = require("semver");
+
+const PackageDetailBreadcrumbs = ({ cosmosPackage, isLoading }) => {
   const name = cosmosPackage.getName();
   const version = cosmosPackage.getVersion();
 
@@ -32,12 +33,14 @@ const PackageDetailBreadcrumbs = ({ cosmosPackage }) => {
         <Link to="/catalog/packages">Catalog</Link>
       </BreadcrumbTextContent>
     </Breadcrumb>,
-    <Breadcrumb key={1} title={name}>
-      <BreadcrumbTextContent>
-        <Link to={`/catalog/packages/${name}`} query={{ version }} key={0}>
-          {name}
-        </Link>
-      </BreadcrumbTextContent>
+    <Breadcrumb key={1} title={!isLoading && name}>
+      {!isLoading && (
+        <BreadcrumbTextContent>
+          <Link to={`/catalog/packages/${name}`} query={{ version }} key={0}>
+            {name}
+          </Link>
+        </BreadcrumbTextContent>
+      )}
     </Breadcrumb>
   ];
 
@@ -138,7 +141,9 @@ class PackageDetailTab extends mixin(StoreMixin) {
     const { params, location } = this.props;
 
     router.push(
-      `/catalog/packages/${encodeURIComponent(params.packageName)}/deploy?version=${location.query.version}`
+      `/catalog/packages/${encodeURIComponent(
+        params.packageName
+      )}/deploy?version=${location.query.version}`
     );
   }
 
@@ -186,11 +191,7 @@ class PackageDetailTab extends mixin(StoreMixin) {
     }
 
     if (typeof value === "string") {
-      value = (
-        <p className="flush">
-          {value}
-        </p>
-      );
+      value = <p className="flush">{value}</p>;
     }
 
     return (
@@ -198,9 +199,7 @@ class PackageDetailTab extends mixin(StoreMixin) {
         className="pod pod-shorter flush-top flush-right flush-left"
         key={key}
       >
-        <h2 className="short-bottom">
-          {label}
-        </h2>
+        <h2 className="short-bottom">{label}</h2>
         {value}
       </div>
     );
@@ -251,22 +250,16 @@ class PackageDetailTab extends mixin(StoreMixin) {
   getPackageBadge(cosmosPackage) {
     const isCertified = cosmosPackage.isCertified();
     const badgeCopy = isCertified ? "Certified" : "Community";
-    const badgeClasses = classNames("badge badge-large", {
-      "badge--primary": isCertified
-    });
+    const appearance = isCertified ? "primary" : "default";
 
     return (
-      <span className="column-3 badge-container selected-badge">
-        <span className={badgeClasses}>
-          {badgeCopy}
-        </span>
+      <span className="column-3">
+        <Badge appearance={appearance}>{badgeCopy}</Badge>
       </span>
     );
   }
 
   getInstallButtons(cosmosPackage) {
-    const tooltipContent = "Loading selected version";
-
     if (cosmosPackage.isCLIOnly()) {
       return (
         <div>
@@ -275,7 +268,7 @@ class PackageDetailTab extends mixin(StoreMixin) {
             {"This package can only be installed using the CLI. See the "}
             <a
               href={MetadataStore.buildDocsURI(
-                "/cli/command-reference/dcos-service/"
+                "/cli/command-reference/dcos-package/dcos-package-install/"
               )}
               target="_blank"
             >
@@ -287,6 +280,27 @@ class PackageDetailTab extends mixin(StoreMixin) {
     }
 
     const { isLoadingSelectedVersion } = this.state;
+    let tooltipContent = "";
+    let installButtonIsDisabled = false;
+
+    if (isLoadingSelectedVersion) {
+      tooltipContent = "Loading selected version";
+      installButtonIsDisabled = true;
+    }
+
+    if (
+      MetadataStore.version &&
+      cosmosPackage.minDcosReleaseVersion &&
+      semver.compare(
+        semver.coerce(MetadataStore.version),
+        semver.coerce(cosmosPackage.minDcosReleaseVersion)
+      ) < 0
+    ) {
+      tooltipContent = `This version of ${cosmosPackage.getName()} requires DC/OS
+        version ${cosmosPackage.minDcosReleaseVersion} or higher, but you are
+        running DC/OS version ${semver.coerce(MetadataStore.version)}`;
+      installButtonIsDisabled = true;
+    }
 
     return (
       <div className="button-collection">
@@ -294,11 +308,11 @@ class PackageDetailTab extends mixin(StoreMixin) {
           wrapperClassName="button-group"
           wrapText={true}
           content={tooltipContent}
-          suppress={!isLoadingSelectedVersion}
+          suppress={!installButtonIsDisabled}
           width={200}
         >
           <button
-            disabled={isLoadingSelectedVersion}
+            disabled={installButtonIsDisabled}
             className="button button-primary"
             onClick={this.handleReviewAndRunClick}
           >
@@ -387,7 +401,9 @@ class PackageDetailTab extends mixin(StoreMixin) {
             <div className="button-collection button-collection-stacked horizontal-center">
               <a
                 className="button button-success button-block"
-                href={`#/services/detail/${encodeURIComponent(location.query.appId)}`}
+                href={`#/services/detail/${encodeURIComponent(
+                  location.query.appId
+                )}`}
               >
                 Open Service
               </a>
@@ -424,18 +440,20 @@ class PackageDetailTab extends mixin(StoreMixin) {
     const definition = [
       {
         label: "Description",
-        value: description &&
+        value: description && (
           <div
             dangerouslySetInnerHTML={StringUtil.parseMarkdown(description)}
           />
+        )
       },
       {
         label: " ",
-        value: preInstallNotes &&
+        value: preInstallNotes && (
           <div
             className="pre-install-notes flush-bottom message message-warning"
             dangerouslySetInnerHTML={preInstallNotesParsed}
           />
+        )
       },
       {
         label: "Information",
@@ -456,7 +474,10 @@ class PackageDetailTab extends mixin(StoreMixin) {
       <Page>
         <Page.Header
           breadcrumbs={
-            <PackageDetailBreadcrumbs cosmosPackage={cosmosPackage} />
+            <PackageDetailBreadcrumbs
+              cosmosPackage={cosmosPackage}
+              isLoading={state.isLoadingSelectedVersion}
+            />
           }
         />
         <div className="container">
@@ -466,21 +487,25 @@ class PackageDetailTab extends mixin(StoreMixin) {
                 <div className="icon icon-huge icon-image-container icon-app-container icon-app-container--borderless icon-default-white">
                   <Image
                     fallbackSrc={defaultServiceImage}
-                    src={cosmosPackage.getIcons()["icon-large"]}
+                    src={
+                      state.isLoadingSelectedVersion
+                        ? defaultServiceImage
+                        : cosmosPackage.getIcons()["icon-large"]
+                    }
                   />
                 </div>
               </div>
-              <div className="media-object-item media-object-item-grow">
-                <div className="flex flex-direction-left-to-right">
-                  <h1 className="short flush-top">
-                    {name}
-                  </h1>
-                  {this.getPackageVersionsDropdown()}
+              {!state.isLoadingSelectedVersion && (
+                <div className="media-object-item media-object-item-grow ">
+                  <div className="flex flex-direction-left-to-right">
+                    <h1 className="short flush-top">{name}</h1>
+                    {this.getPackageVersionsDropdown()}
+                  </div>
+                  <div className="row">
+                    {this.getPackageBadge(cosmosPackage)}
+                  </div>
                 </div>
-                <div className="row">
-                  {this.getPackageBadge(cosmosPackage)}
-                </div>
-              </div>
+              )}
               <div className="media-object-item package-action-buttons">
                 {this.getInstallButtons(cosmosPackage)}
               </div>

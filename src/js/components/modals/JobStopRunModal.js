@@ -72,11 +72,7 @@ class JobStopRunModal extends mixin(StoreMixin) {
       bodyText = "the selected job runs";
     }
 
-    return (
-      <span key="confirmText">
-        You are about to stop {bodyText}.
-      </span>
-    );
+    return <span key="confirmText">You are about to stop {bodyText}.</span>;
   }
 
   getModalContents() {
@@ -132,4 +128,4 @@ JobStopRunModal.propTypes = {
   selectedItems: PropTypes.array.isRequired
 };
 
-module.exports = JobStopRunModal;
+export default JobStopRunModal;

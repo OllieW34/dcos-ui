@@ -15,6 +15,7 @@ import SaveStateMixin from "#SRC/js/mixins/SaveStateMixin";
 import StringUtil from "#SRC/js/utils/StringUtil";
 import { isSDKService } from "#SRC/js/utils/ServiceUtil";
 
+import { Badge } from "@dcos/ui-kit";
 import TaskStatusDSLSection from "../../components/dsl/TaskStatusDSLSection";
 import TaskZoneDSLSection from "../../components/dsl/TaskZoneDSLSection";
 import TaskRegionDSLSection from "../../components/dsl/TaskRegionDSLSection";
@@ -106,7 +107,7 @@ class TasksView extends mixin(SaveStateMixin) {
         <span className="badge-container-text">
           {StringUtil.capitalize(filterName)}
         </span>
-        <span className="badge">{count || 0}</span>
+        <Badge>{count || 0}</Badge>
       </span>
     );
   }
@@ -123,18 +124,21 @@ class TasksView extends mixin(SaveStateMixin) {
     const isDeploying = Object.keys(checkedItems).some(function(taskId) {
       const service = DCOSStore.serviceTree.getServiceFromTaskID(taskId);
 
-      return service.getServiceStatus().key === ServiceStatusTypes.DEPLOYING;
+      return (
+        service &&
+        service.getServiceStatus().key === ServiceStatusTypes.DEPLOYING
+      );
     });
 
     const isSDK = Object.keys(checkedItems).some(function(taskId) {
       const service = DCOSStore.serviceTree.getServiceFromTaskID(taskId);
 
-      return isSDKService(service);
+      return service && isSDKService(service);
     });
 
     // Only show Stop if a scheduler task isn't selected
     const hasSchedulerTask = tasks.some(
-      task => task.id in checkedItems && task.schedulerTask
+      task => task.id in checkedItems && task.isSchedulerTask
     );
 
     // Using Button's native "disabled" prop prevents onMouseLeave from
@@ -199,7 +203,7 @@ class TasksView extends mixin(SaveStateMixin) {
 
     const filterExpressionValue = filterExpression.value;
 
-    const hostClasses = classNames({
+    const hostClasses = classNames("flush-left", {
       "column-medium-5": !filterExpressionValue,
       "column-medium-12": filterExpressionValue
     });
@@ -239,7 +243,7 @@ class TasksView extends mixin(SaveStateMixin) {
       rightAlignLastNChildren = 1;
     }
 
-    const mergedTasks = tasks.map(TaskMergeDataUtil.mergeData);
+    const mergedTasks = TaskMergeDataUtil.mergeTaskData(tasks);
 
     return (
       <div className="flex-container-col flex-grow">

@@ -6,6 +6,7 @@
       border: @code-block-prettyprint-border-width @code-block-prettyprint-border-style @code-block-prettyprint-border-color;
       border-radius: @code-border-radius;
       border-style: @code-block-prettyprint-border-style;
+      flex-basis: @code-block-prettyprint-flex-basis;
 
       &.inverse {
         border-color: @code-block-prettyprint-border-color-inverse;
@@ -24,8 +25,6 @@
     &:hover {
 
       .code-copy-icon {
-        background: @code-block-background-color;
-        box-shadow: 4px 0 6px @code-block-padding-top @code-block-background-color;
         display: block;
         position: absolute;
         right: @code-block-padding-right;

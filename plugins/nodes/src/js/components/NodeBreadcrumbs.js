@@ -13,21 +13,28 @@ const NodeBreadcrumbs = ({ nodeID, taskID, taskName, unitID }) => {
   const crumbs = [
     <Breadcrumb key={-1} title="Nodes">
       <BreadcrumbTextContent>
-        <Link to="/nodes" key={-1}>Nodes</Link>
+        <Link to="/nodes" key={-1}>
+          Nodes
+        </Link>
       </BreadcrumbTextContent>
     </Breadcrumb>
   ];
   let node;
 
   if (nodeID != null && trimmedNodeID.length > 0) {
-    node = CompositeState.getNodesList().filter({ ids: [nodeID] }).last();
-    crumbs.push(
-      <Breadcrumb key="hostname" title={node.hostname}>
-        <BreadcrumbTextContent>
-          <Link to={`/nodes/${encodedNodeID}`}>{node.hostname}</Link>
-        </BreadcrumbTextContent>
-      </Breadcrumb>
-    );
+    node = CompositeState.getNodesList()
+      .filter({ ids: [nodeID] })
+      .last();
+
+    if (node) {
+      crumbs.push(
+        <Breadcrumb key="hostname" title={node.hostname}>
+          <BreadcrumbTextContent>
+            <Link to={`/nodes/${encodedNodeID}`}>{node.hostname}</Link>
+          </BreadcrumbTextContent>
+        </Breadcrumb>
+      );
+    }
   }
 
   if (taskID != null && taskName != null) {
@@ -43,7 +50,7 @@ const NodeBreadcrumbs = ({ nodeID, taskID, taskName, unitID }) => {
     );
   }
 
-  if (unitID != null) {
+  if (node != null && unitID != null) {
     const unit = UnitHealthStore.getUnit(unitID);
     const healthStatus = UnitHealthStore.getNode(node.hostname).getHealth();
     const unitTitle = unit.getTitle();
@@ -52,7 +59,9 @@ const NodeBreadcrumbs = ({ nodeID, taskID, taskName, unitID }) => {
       <Breadcrumb key="unit-health" title={unitTitle}>
         <BreadcrumbTextContent>
           <Link
-            to={`/nodes/${encodedNodeID}/health/${node.hostname}/${unit.get("id")}`}
+            to={`/nodes/${encodedNodeID}/health/${node.hostname}/${unit.get(
+              "id"
+            )}`}
             key={-1}
           >
             {`${unitTitle} `}

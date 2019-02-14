@@ -53,8 +53,7 @@ import {
   SERVER_ACTION
 } from "../constants/ActionTypes";
 import RepositoryList from "../structs/RepositoryList";
-import UniverseInstalledPackagesList
-  from "../structs/UniverseInstalledPackagesList";
+import UniverseInstalledPackagesList from "../structs/UniverseInstalledPackagesList";
 import UniversePackage from "../structs/UniversePackage";
 import UniversePackageVersions from "../structs/UniversePackageVersions";
 import UniversePackagesList from "../structs/UniversePackagesList";
@@ -66,6 +65,7 @@ class CosmosPackagesStore extends GetSetBaseStore {
     this.getSet_data = {
       availablePackages: [],
       packagesVersions: {},
+      packageImages: {},
       packageDetails: null,
       serviceDetails: null,
       packageVersions: null,
@@ -155,7 +155,8 @@ class CosmosPackagesStore extends GetSetBaseStore {
           );
           break;
         case REQUEST_COSMOS_PACKAGES_SEARCH_SUCCESS:
-          this.processAvailablePackagesSuccess(data, action.query);
+          this.processPackageImagesSuccess(data.images);
+          this.processAvailablePackagesSuccess(data.packages, action.query);
           break;
         case REQUEST_COSMOS_PACKAGES_SEARCH_ERROR:
           this.processAvailablePackagesError(data, action.query);
@@ -317,6 +318,10 @@ class CosmosPackagesStore extends GetSetBaseStore {
     return null;
   }
 
+  getPackageImages() {
+    return this.get("packageImages");
+  }
+
   getServiceDetails() {
     return this.get("serviceDetails");
   }
@@ -338,6 +343,10 @@ class CosmosPackagesStore extends GetSetBaseStore {
     this.set({ availablePackages: packages });
 
     this.emit(COSMOS_SEARCH_CHANGE, query);
+  }
+
+  processPackageImagesSuccess(packageImages) {
+    this.set({ packageImages });
   }
 
   processAvailablePackagesError(error, query) {

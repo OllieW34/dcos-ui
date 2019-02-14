@@ -1,12 +1,10 @@
-const deepEqual = require("deep-equal");
+import isEqual from "lodash.isequal";
 /* eslint-disable no-unused-vars */
-const React = require("react");
+import React from "react";
 /* eslint-enable no-unused-vars */
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import { shallow } from "enzyme";
 
 const NodesGridDials = require("../NodesGridDials");
-const ResourcesUtil = require("#SRC/js/utils/ResourcesUtil");
 const Node = require("#SRC/js/structs/Node");
 
 var mockHost = {
@@ -20,173 +18,125 @@ var mockHost = {
   }
 };
 
+let thisHosts, thisInstance, thisActiveSlices;
+
 describe("NodesGridDials", function() {
   beforeEach(function() {
-    this.hosts = [new Node(Object.assign({}, mockHost))];
-    this.container = global.document.createElement("div");
-    this.instance = ReactDOM.render(
+    thisHosts = [new Node(Object.assign({}, mockHost))];
+    thisInstance = shallow(
       <NodesGridDials
-        hosts={this.hosts}
+        hosts={thisHosts}
         selectedResource="cpus"
         serviceColors={{}}
-        showServices={false}
         resourcesByFramework={{}}
-      />,
-      this.container
+      />
     );
-  });
-  afterEach(function() {
-    ReactDOM.unmountComponentAtNode(this.container);
   });
 
   describe("#getServiceSlicesConfig", function() {
     beforeEach(function() {
-      this.instance = ReactDOM.render(
+      thisInstance = shallow(
         <NodesGridDials
-          hosts={this.hosts}
+          hosts={thisHosts}
           selectedResource="disk"
           serviceColors={{}}
-          showServices={false}
           resourcesByFramework={{
             foo: {
               cpus: 1,
               mem: 256
             }
           }}
-        />,
-        this.container
+        />
       );
     });
 
     it("returns 0 when no resource is in use", function() {
-      const slice = this.instance.getServiceSlicesConfig(this.hosts[0])[0];
+      const slice = thisInstance
+        .instance()
+        .getServiceSlicesConfig(thisHosts[0])[0];
       expect(slice.percentage).toEqual(0);
     });
   });
 
   describe("#getActiveSliceData", function() {
     beforeEach(function() {
-      this.resourceColor = ResourcesUtil.getResourceColor("cpus");
-      this.resourceLabel = ResourcesUtil.getResourceLabel("cpus");
-      this.activeSlices = this.instance.getActiveSliceData(this.hosts[0]);
+      thisActiveSlices = thisInstance
+        .instance()
+        .getActiveSliceData(thisHosts[0]);
     });
 
     it("returns an object", function() {
-      expect(typeof this.activeSlices).toEqual("object");
+      expect(typeof thisActiveSlices).toEqual("object");
     });
 
     it("contains a data property which is an array", function() {
-      expect(Array.isArray(this.activeSlices.data)).toEqual(true);
+      expect(Array.isArray(thisActiveSlices.data)).toEqual(true);
     });
 
     it("contains a usedPercentage property which is a number", function() {
-      expect(typeof this.activeSlices.usedPercentage).toEqual("number");
-    });
-
-    it("contains a slice for the used resource", function() {
-      var slice = this.activeSlices.data.find(datum => {
-        return datum.name === this.resourceLabel;
-      });
-      expect(typeof slice).toEqual("object");
-    });
-
-    it("uses the correct color", function() {
-      var slice = this.activeSlices.data.find(datum => {
-        return datum.name === this.resourceLabel;
-      });
-      expect(slice.colorIndex).toEqual(this.resourceColor);
-    });
-
-    it("calculate the active percentage", function() {
-      var slice = this.activeSlices.data.find(datum => {
-        return datum.name === this.resourceLabel;
-      });
-      expect(slice.percentage).toEqual(50);
+      expect(typeof thisActiveSlices.usedPercentage).toEqual("number");
     });
 
     it("contains an unused resources slice", function() {
-      var slice = this.activeSlices.data.find(function(datum) {
+      var slice = thisActiveSlices.data.find(function(datum) {
         return datum.name === "Unused";
       });
       expect(typeof slice).toEqual("object");
     });
 
     it("uses gray for the unused slice", function() {
-      var slice = this.activeSlices.data.find(function(datum) {
+      var slice = thisActiveSlices.data.find(function(datum) {
         return datum.name === "Unused";
       });
       expect(slice.colorIndex).toEqual("unused");
-    });
-
-    it("calculates the used percentage", function() {
-      var slice = this.activeSlices.data.find(function(datum) {
-        return datum.name === "Unused";
-      });
-      expect(slice.percentage).toEqual(50);
     });
   });
 
   describe("#getInactiveSliceData", function() {
     it("uses the correct color", function() {
-      var inactiveSlice = this.instance.getInactiveSliceData();
+      var inactiveSlice = thisInstance.instance().getInactiveSliceData();
       expect(inactiveSlice[0].colorIndex).toEqual(2);
     });
 
     it("uses 100% of the dial", function() {
-      var inactiveSlice = this.instance.getInactiveSliceData();
+      var inactiveSlice = thisInstance.instance().getInactiveSliceData();
       expect(inactiveSlice[0].percentage).toEqual(100);
     });
   });
 
   describe("#getDialConfig", function() {
-    beforeEach(function() {
-      this.resourceType = ResourcesUtil.cpus;
-    });
-
     it("returns different configurations depending on the active parameter", function() {
-      let host = Object.assign({}, this.hosts[0]);
+      let host = Object.assign({}, thisHosts[0]);
       host.active = true;
-      var config1 = this.instance.getDialConfig(new Node(host));
+      var config1 = thisInstance.instance().getDialConfig(new Node(host));
 
-      host = Object.assign({}, this.hosts[0]);
+      host = Object.assign({}, thisHosts[0]);
       host.active = false;
-      var config2 = this.instance.getDialConfig(new Node(host));
+      var config2 = thisInstance.instance().getDialConfig(new Node(host));
 
-      expect(deepEqual(config1, config2)).toEqual(false);
+      expect(isEqual(config1, config2)).toEqual(false);
     });
   });
 
   describe("#render", function() {
     it("renders one chart", function() {
-      var elements = TestUtils.scryRenderedDOMComponentsWithClass(
-        this.instance,
-        "chart"
-      );
-
-      expect(elements.length).toEqual(1);
+      expect(thisInstance.find(".chart").length).toBe(1);
     });
 
     it("renders the correct number of charts", function() {
-      const host = Object.assign({}, this.hosts[0]);
+      const host = Object.assign({}, thisHosts[0]);
       host.id = "bar";
-      this.hosts.push(new Node(host));
-      this.instance = ReactDOM.render(
+      thisHosts.push(new Node(host));
+      thisInstance = shallow(
         <NodesGridDials
-          hosts={this.hosts}
+          hosts={thisHosts}
           selectedResource="cpus"
           serviceColors={{}}
-          showServices={false}
           resourcesByFramework={{}}
-        />,
-        this.container
+        />
       );
 
-      var elements = TestUtils.scryRenderedDOMComponentsWithClass(
-        this.instance,
-        "chart"
-      );
-
-      expect(elements.length).toEqual(2);
+      expect(thisInstance.find(".chart").length).toBe(2);
     });
   });
 });

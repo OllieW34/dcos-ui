@@ -2,7 +2,7 @@ const ActionTypes = require("../../constants/ActionTypes");
 const AppDispatcher = require("../../events/AppDispatcher");
 const MetronomeActions = require("../../events/MetronomeActions");
 const MetronomeStore = require("../MetronomeStore");
-const Config = require("../../config/Config");
+const Config = require("#SRC/js/config/Config").default;
 const EventTypes = require("../../constants/EventTypes");
 const jobsFixture = require("../../../../tests/_fixtures/metronome/jobs.json");
 const jobFixture = require("../../../../tests/_fixtures/metronome/job.json");
@@ -10,10 +10,7 @@ const JobTree = require("../../structs/JobTree");
 
 describe("MetronomeStore", function() {
   beforeEach(function() {
-    // Clean up application timers
-    jasmine.clock().uninstall();
-    // Install our custom jasmine timers
-    jasmine.clock().install();
+    jest.useFakeTimers();
     // Reset store data
     MetronomeStore.data.jobMap = new Map();
     MetronomeStore.data.jobTree = null;
@@ -23,8 +20,10 @@ describe("MetronomeStore", function() {
   });
 
   afterEach(function() {
+    jest.useRealTimers();
     MetronomeStore.removeAllListeners();
     MetronomeStore.stopJobDetailMonitor();
+    jest.clearAllTimers();
   });
 
   describe("constructor", function() {
@@ -34,7 +33,7 @@ describe("MetronomeStore", function() {
         function() {}
       );
       // Let two intervals run
-      jasmine.clock().tick(2 * Config.getRefreshRate());
+      jest.advanceTimersByTime(2 * Config.getRefreshRate());
       expect(MetronomeActions.fetchJobs.calls.count()).toEqual(3);
     });
   });
@@ -289,7 +288,7 @@ describe("MetronomeStore", function() {
       // Begin monitoring job details
       MetronomeStore.monitorJobDetail("foo");
       // Let three intervals run
-      jasmine.clock().tick(3 * Config.getRefreshRate());
+      jest.advanceTimersByTime(3 * Config.getRefreshRate());
       expect(MetronomeActions.fetchJobDetail.calls.count()).toEqual(4);
     });
 
@@ -298,7 +297,7 @@ describe("MetronomeStore", function() {
       MetronomeStore.monitorJobDetail("foo");
       MetronomeStore.monitorJobDetail("bar");
       // Let three intervals run
-      jasmine.clock().tick(3 * Config.getRefreshRate());
+      jest.advanceTimersByTime(3 * Config.getRefreshRate());
       expect(MetronomeActions.fetchJobDetail.calls.count()).toEqual(8);
     });
   });
@@ -308,11 +307,11 @@ describe("MetronomeStore", function() {
       // Begin monitoring job details on specific ID
       MetronomeStore.monitorJobDetail("foo");
       // Let three intervals run
-      jasmine.clock().tick(3 * Config.getRefreshRate());
+      jest.advanceTimersByTime(3 * Config.getRefreshRate());
       // Stop monitoring specific job's details
       MetronomeStore.stopJobDetailMonitor("foo");
       // Initiate another 1 intervals to ensure the job is no longer fetched
-      jasmine.clock().tick(1 * Config.getRefreshRate());
+      jest.advanceTimersByTime(1 * Config.getRefreshRate());
       expect(MetronomeActions.fetchJobDetail.calls.count()).toEqual(4);
     });
 
@@ -322,11 +321,11 @@ describe("MetronomeStore", function() {
       MetronomeStore.monitorJobDetail("bar");
       MetronomeStore.monitorJobDetail("baz");
       // Let four intervals run
-      jasmine.clock().tick(4 * Config.getRefreshRate());
+      jest.advanceTimersByTime(4 * Config.getRefreshRate());
       // Stop monitoring specific job's details
       MetronomeStore.stopJobDetailMonitor();
       // Initiate another 1 intervals to ensure the jobs are no longer fetched
-      jasmine.clock().tick(1 * Config.getRefreshRate());
+      jest.advanceTimersByTime(1 * Config.getRefreshRate());
       expect(MetronomeActions.fetchJobDetail.calls.count()).toEqual(15);
     });
   });

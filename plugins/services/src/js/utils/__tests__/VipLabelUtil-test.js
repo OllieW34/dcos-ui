@@ -65,7 +65,7 @@ describe("VipLabelUtil", function() {
       });
 
       describe("when vip has been given", function() {
-        it("generates VIP", function() {
+        it("generates VIP with new port value", function() {
           var portDefinition = {
             loadBalanced: true,
             vip: "service-address:9091"
@@ -77,9 +77,47 @@ describe("VipLabelUtil", function() {
             vipPort
           );
 
-          expect(result).toEqual({ VIP_0: "service-address:9091" });
+          expect(result).toEqual({ VIP_0: "service-address:7070" });
         });
       });
+    });
+  });
+
+  describe("#findVip", function() {
+    it("returns the first occurance with VIP prefix", function() {
+      expect(
+        VipLabelUtil.findVip({
+          other: "not_vip",
+          VIP1: "vip",
+          VIP2: "vip"
+        })
+      ).toEqual(["VIP1", "vip"]);
+    });
+
+    it("returns the first occurance with vip prefix", function() {
+      expect(
+        VipLabelUtil.findVip({
+          other: "not_vip",
+          vip1: "vip1",
+          vip2: "vip2"
+        })
+      ).toEqual(["vip1", "vip1"]);
+    });
+
+    it("ignores mixed case variants", function() {
+      expect(
+        VipLabelUtil.findVip({
+          Vip: "not_vip",
+          vIP: "vip1",
+          viP: "vip2"
+        })
+      ).toEqual(undefined);
+    });
+  });
+
+  describe("#defaultVip", function() {
+    it("constructs the value", function() {
+      expect(VipLabelUtil.defaultVip(1)).toEqual("VIP_1");
     });
   });
 });

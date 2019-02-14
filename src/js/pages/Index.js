@@ -1,24 +1,27 @@
 import classNames from "classnames";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import React from "react";
+import { CSSTransitionGroup } from "react-transition-group";
 
 import { StoreMixin } from "mesosphere-shared-reactjs";
 
 import Config from "../config/Config";
 import ConfigStore from "../stores/ConfigStore";
 import EventTypes from "../constants/EventTypes";
-import InternalStorageMixin from "../mixins/InternalStorageMixin";
 import MetadataStore from "../stores/MetadataStore";
+import MesosStateStore from "../stores/MesosStateStore";
 import Modals from "../components/Modals";
 import RequestErrorMsg from "../components/RequestErrorMsg";
 import ServerErrorModal from "../components/ServerErrorModal";
+import HeaderBar from "../components/HeaderBar";
 import Sidebar from "../components/Sidebar";
 import SidebarActions from "../events/SidebarActions";
 import SidebarStore from "../stores/SidebarStore";
+import { hasViewportChanged, getCurrentViewport } from "../utils/ViewportUtil";
+import * as viewport from "../constants/Viewports";
 
 function getSidebarState() {
   return {
-    isDocked: SidebarStore.get("isDocked"),
     isVisible: SidebarStore.get("isVisible")
   };
 }
@@ -26,20 +29,25 @@ function getSidebarState() {
 var Index = React.createClass({
   displayName: "Index",
 
-  mixins: [InternalStorageMixin, StoreMixin],
+  mixins: [StoreMixin],
 
   getInitialState() {
     return {
       mesosSummaryErrorCount: 0,
       showErrorModal: false,
       modalErrorMsg: "",
-      configErrorCount: 0
+      configErrorCount: 0,
+      previousWindowWidth: global.innerWidth
     };
   },
 
   componentWillMount() {
     MetadataStore.init();
     SidebarStore.init();
+    MesosStateStore.addChangeListener(
+      EventTypes.MESOS_STATE_CHANGE,
+      this.onMesosStoreChange
+    );
 
     // We want to always request the summary endpoint. This will ensure that
     // our charts always have data to render.
@@ -50,9 +58,6 @@ var Index = React.createClass({
         suppressUpdate: true
       }
     ];
-
-    const state = getSidebarState();
-    this.internalStorage_set(state);
   },
 
   componentDidMount() {
@@ -60,31 +65,34 @@ var Index = React.createClass({
       EventTypes.SIDEBAR_CHANGE,
       this.onSideBarChange
     );
-    global.addEventListener("resize", SidebarActions.close);
+    global.addEventListener("resize", this.handleWindowResize);
 
+    ConfigStore.fetchCCID();
     ConfigStore.addChangeListener(EventTypes.CONFIG_ERROR, this.onConfigError);
   },
 
   shouldComponentUpdate(nextProps, nextState) {
-    return !(deepEqual(this.props, nextProps) &&
-      deepEqual(this.state, nextState));
+    return !(isEqual(this.props, nextProps) && isEqual(this.state, nextState));
   },
 
   componentWillUnmount() {
+    global.removeEventListener("resize", this.handleWindowResize);
+
     SidebarStore.removeChangeListener(
       EventTypes.SIDEBAR_CHANGE,
       this.onSideBarChange
     );
-    global.removeEventListener("resize", SidebarActions.close);
-
     ConfigStore.removeChangeListener(
       EventTypes.CONFIG_ERROR,
       this.onConfigError
     );
+    MesosStateStore.removeChangeListener(
+      EventTypes.MESOS_STATE_CHANGE,
+      this.onMesosStoreChange
+    );
   },
 
   onSideBarChange() {
-    this.internalStorage_update(getSidebarState());
     this.forceUpdate();
   },
 
@@ -109,6 +117,8 @@ var Index = React.createClass({
     });
   },
 
+  onMesosStoreChange() {},
+
   getErrorScreen(showErrorScreen) {
     if (!showErrorScreen) {
       return null;
@@ -129,26 +139,82 @@ var Index = React.createClass({
     );
   },
 
+  handleWindowResize() {
+    const currentWindowWidth = global.innerWidth;
+
+    if (
+      !hasViewportChanged(this.state.previousWindowWidth, currentWindowWidth)
+    ) {
+      this.setState({
+        previousWindowWidth: currentWindowWidth
+      });
+
+      return;
+    }
+
+    if (getCurrentViewport() === viewport.DESKTOP) {
+      SidebarActions.open();
+    }
+
+    if (getCurrentViewport() === viewport.MOBILE) {
+      SidebarActions.close();
+    }
+
+    this.setState({
+      previousWindowWidth: currentWindowWidth
+    });
+  },
+
+  renderOverlay() {
+    const { isVisible } = getSidebarState();
+    let overlay = null;
+
+    if (!isVisible) {
+      return null;
+    }
+
+    overlay = (
+      <div className="sidebar-backdrop" onClick={SidebarActions.close} />
+    );
+
+    if (window.innerWidth <= viewport.MOBILE_THRESHOLD) {
+      return (
+        <CSSTransitionGroup
+          transitionName="sidebar-backdrop"
+          transitionEnterTimeout={250}
+          transitionLeaveTimeout={250}
+        >
+          {overlay}
+        </CSSTransitionGroup>
+      );
+    }
+  },
+
   render() {
-    var { isDocked, isVisible } = this.internalStorage_get();
+    const { isVisible } = getSidebarState();
+
     const showErrorScreen =
       this.state.configErrorCount >= Config.delayAfterErrorCount;
 
     var classSet = classNames("application-wrapper", {
       "sidebar-visible": isVisible,
-      "sidebar-docked": isDocked
+      "sidebar-docked": isVisible
     });
 
     return (
       <div className={classSet}>
-        {this.getScreenOverlays(showErrorScreen)}
-        <Sidebar location={this.props.location} />
-        {this.props.children}
-        <Modals
-          showErrorModal={this.state.showErrorModal}
-          modalErrorMsg={this.state.modalErrorMsg}
-        />
-        <ServerErrorModal />
+        <HeaderBar />
+        <div className="application-wrapper-inner">
+          {this.getScreenOverlays(showErrorScreen)}
+          <Sidebar location={this.props.location} />
+          {this.renderOverlay()}
+          {this.props.children}
+          <Modals
+            showErrorModal={this.state.showErrorModal}
+            modalErrorMsg={this.state.modalErrorMsg}
+          />
+          <ServerErrorModal />
+        </div>
       </div>
     );
   }

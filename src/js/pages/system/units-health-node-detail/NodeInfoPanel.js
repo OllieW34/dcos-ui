@@ -3,13 +3,9 @@ import PropTypes from "prop-types";
 import React from "react";
 
 import ConfigurationMap from "../../../components/ConfigurationMap";
-import ConfigurationMapHeading
-  from "../../../components/ConfigurationMapHeading";
+import ConfigurationMapHeading from "../../../components/ConfigurationMapHeading";
 import ConfigurationMapRow from "../../../components/ConfigurationMapRow";
-import ConfigurationMapSection
-  from "../../../components/ConfigurationMapSection";
-
-import { documentationURI } from "../../../config/Config";
+import ConfigurationMapSection from "../../../components/ConfigurationMapSection";
 
 class NodeInfoPanel extends React.Component {
   constructor() {
@@ -24,24 +20,18 @@ class NodeInfoPanel extends React.Component {
       <div className="container">
         <ConfigurationMap>
           <ConfigurationMapSection>
-            <ConfigurationMapHeading>
-              Summary
-            </ConfigurationMapHeading>
-            <p>
-              {summary}
-            </p>
-            <a href={docsURL} target="_blank">
-              View Documentation
-            </a>
+            <ConfigurationMapHeading>Summary</ConfigurationMapHeading>
+            <p>{summary}</p>
+            {docsURL && (
+              <a href={docsURL} target="_blank">
+                View Documentation
+              </a>
+            )}
           </ConfigurationMapSection>
           <ConfigurationMapSection>
-            <ConfigurationMapHeading>
-              Output
-            </ConfigurationMapHeading>
+            <ConfigurationMapHeading>Output</ConfigurationMapHeading>
             <ConfigurationMapRow>
-              <pre className="flex-item-grow-1 flush-bottom">
-                {output}
-              </pre>
+              <pre className="flex-item-grow-1 flush-bottom">{output}</pre>
             </ConfigurationMapRow>
           </ConfigurationMapSection>
         </ConfigurationMap>
@@ -54,10 +44,6 @@ NodeInfoPanel.propTypes = {
   docsURL: PropTypes.string,
   output: PropTypes.string,
   summary: PropTypes.string
-};
-
-NodeInfoPanel.defaultProps = {
-  docsURL: documentationURI
 };
 
 module.exports = NodeInfoPanel;

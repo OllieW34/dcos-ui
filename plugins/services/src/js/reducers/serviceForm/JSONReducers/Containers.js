@@ -1,18 +1,15 @@
 import { SET, ADD_ITEM, REMOVE_ITEM } from "#SRC/js/constants/TransactionTypes";
 import { combineReducers, simpleFloatReducer } from "#SRC/js/utils/ReducerUtil";
 import { findNestedPropertyInObject } from "#SRC/js/utils/Util";
+import ContainerUtil from "#SRC/js/utils/ContainerUtil";
 import { isEmpty } from "#SRC/js/utils/ValidatorUtil";
 import Transaction from "#SRC/js/structs/Transaction";
 import Networking from "#SRC/js/constants/Networking";
 
 import { DEFAULT_POD_CONTAINER } from "../../../constants/DefaultPod";
-import {
-  JSONReducer as volumeMountsReducer
-} from "./MultiContainerVolumeMounts";
+import { JSONReducer as volumeMountsReducer } from "./MultiContainerVolumeMounts";
 import { JSONReducer as endpointsJSONReducer } from "./Endpoints";
-import {
-  JSONReducer as multiContainerArtifactsJSONReducer
-} from "./MultiContainerArtifacts";
+import { JSONReducer as multiContainerArtifactsJSONReducer } from "./MultiContainerArtifacts";
 import {
   JSONSegmentReducer as multiContainerHealthCheckReducer,
   JSONSegmentParser as multiContainerHealthCheckParser
@@ -36,6 +33,7 @@ function mapEndpoints(endpoints = [], networkType, appState) {
       containerPort,
       automaticPort,
       protocol,
+      vipLabel,
       vipPort,
       labels
     } = endpoint;
@@ -48,16 +46,14 @@ function mapEndpoints(endpoints = [], networkType, appState) {
       hostPort = 0;
     }
 
+    labels = VipLabelUtil.generateVipLabel(
+      appState.id,
+      endpoint,
+      vipLabel || VipLabelUtil.defaultVip(index),
+      vipPort || containerPort || hostPort
+    );
+
     if (networkType === CONTAINER) {
-      const vipLabel = `VIP_${index}`;
-
-      labels = VipLabelUtil.generateVipLabel(
-        appState.id,
-        endpoint,
-        vipLabel,
-        vipPort || containerPort || hostPort
-      );
-
       return {
         name,
         containerPort,
@@ -228,44 +224,43 @@ function containersParser(state) {
               endpoint.containerPort
             )
           );
+        }
 
-          const vip = findNestedPropertyInObject(
-            endpoint,
-            `labels.VIP_${endpointIndex}`
+        const vip = VipLabelUtil.findVip(endpoint.labels);
+
+        if (vip != null) {
+          const [vipLabel, vipValue] = vip;
+          memo.push(
+            new Transaction(
+              ["containers", index, "endpoints", endpointIndex, "loadBalanced"],
+              true
+            )
           );
 
-          if (vip != null) {
+          memo.push(
+            new Transaction(
+              ["containers", index, "endpoints", endpointIndex, "vipLabel"],
+              vipLabel
+            )
+          );
+
+          if (!vipValue.startsWith(`${state.id}:`)) {
             memo.push(
               new Transaction(
-                [
-                  "containers",
-                  index,
-                  "endpoints",
-                  endpointIndex,
-                  "loadBalanced"
-                ],
-                true
+                ["containers", index, "endpoints", endpointIndex, "vip"],
+                vipValue
               )
             );
+          }
 
-            if (!vip.startsWith(`${state.id}:`)) {
-              memo.push(
-                new Transaction(
-                  ["containers", index, "endpoints", endpointIndex, "vip"],
-                  vip
-                )
-              );
-            }
-
-            const vipPortMatch = vip.match(/.+:(\d+)/);
-            if (vipPortMatch) {
-              memo.push(
-                new Transaction(
-                  ["containers", index, "endpoints", endpointIndex, "vipPort"],
-                  vipPortMatch[1]
-                )
-              );
-            }
+          const vipPortMatch = vipValue.match(/.+:(\d+)/);
+          if (vipPortMatch) {
+            memo.push(
+              new Transaction(
+                ["containers", index, "endpoints", endpointIndex, "vipPort"],
+                vipPortMatch[1]
+              )
+            );
           }
         }
 
@@ -392,9 +387,14 @@ module.exports = {
     if (joinedPath === "containers") {
       switch (type) {
         case ADD_ITEM:
-          const name = `container-${newState.length + 1}`;
+          const name = ContainerUtil.getNewContainerName(
+            newState.length,
+            newState
+          );
 
-          newState.push(Object.assign({}, DEFAULT_POD_CONTAINER, { name }));
+          newState.push(
+            Object.assign({}, DEFAULT_POD_CONTAINER, { name }, value)
+          );
           this.cache.push({});
           this.endpoints.push([]);
           break;
@@ -432,6 +432,10 @@ module.exports = {
               mountPath: volumeMount.mountPath[index]
             };
           });
+      }
+
+      if (this.volumeMounts.length === 0 && container.volumeMounts != null) {
+        container.volumeMounts = [];
       }
 
       return container;

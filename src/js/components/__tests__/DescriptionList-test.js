@@ -1,76 +1,45 @@
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+
+import { shallow, mount } from "enzyme";
 
 const HashMapDisplay = require("../HashMapDisplay");
 
 describe("HashMapDisplay", function() {
-  beforeEach(function() {
-    this.container = global.document.createElement("div");
-  });
-
-  afterEach(function() {
-    ReactDOM.unmountComponentAtNode(this.container);
-  });
-
   it("returns null if hash is not passed", function() {
-    var instance = ReactDOM.render(<HashMapDisplay />, this.container);
-
-    var result = ReactDOM.findDOMNode(instance);
-    expect(TestUtils.isDOMComponent(result)).toEqual(false);
+    const instance = shallow(<HashMapDisplay />);
+    expect(instance.type()).toEqual(null);
   });
 
   it("returns null if hash is not passed with headline", function() {
-    var instance = ReactDOM.render(
-      <HashMapDisplay headline="foo" />,
-      this.container
-    );
+    const instance = shallow(<HashMapDisplay headline="foo" />);
 
-    var result = ReactDOM.findDOMNode(instance);
-    expect(TestUtils.isDOMComponent(result)).toEqual(false);
+    expect(instance.type()).toEqual(null);
   });
 
   it("returns null if undefined is passed to hash", function() {
-    var instance = ReactDOM.render(
-      <HashMapDisplay hash={undefined} />,
-      this.container
-    );
+    const instance = shallow(<HashMapDisplay hash={undefined} />);
 
-    var result = ReactDOM.findDOMNode(instance);
-    expect(TestUtils.isDOMComponent(result)).toEqual(false);
+    expect(instance.type()).toEqual(null);
   });
 
   it("returns null if empty object is passed to hash", function() {
-    var instance = ReactDOM.render(
-      <HashMapDisplay hash={{}} />,
-      this.container
-    );
+    const instance = shallow(<HashMapDisplay hash={{}} />);
 
-    var result = ReactDOM.findDOMNode(instance);
-    expect(TestUtils.isCompositeComponent(result)).toEqual(false);
+    expect(instance.type()).toEqual(null);
   });
 
   it("returns a node of elements if node exists", function() {
-    var instance = ReactDOM.render(
-      <HashMapDisplay hash={{ foo: "bar" }} />,
-      this.container
-    );
+    var instance = shallow(<HashMapDisplay hash={{ foo: "bar" }} />);
 
-    var result = ReactDOM.findDOMNode(instance);
-    expect(TestUtils.isDOMComponent(result)).toEqual(true);
+    expect(instance.find("ConfigurationMapLabel").length).toEqual(1);
+    expect(instance.find("ConfigurationMapValue").length).toEqual(1);
   });
 
   it("returns a headline if headline string is given", function() {
-    var instance = ReactDOM.render(
-      <HashMapDisplay hash={{ foo: "bar" }} headline="baz" />,
-      this.container
+    var instance = mount(
+      <HashMapDisplay hash={{ foo: "bar" }} headline="baz" />
     );
 
-    var node = ReactDOM.findDOMNode(instance);
-    var headline = node.querySelector(".configuration-map-heading");
-
-    expect(headline.textContent).toEqual("baz");
+    expect(instance.find("ConfigurationMapHeading").text()).toEqual("baz");
   });
 });

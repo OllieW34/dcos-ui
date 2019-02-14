@@ -140,4 +140,51 @@ describe("Node", function() {
       });
     });
   });
+
+  describe("#getResources", function() {
+    it("returns empty obj when resources are falsey", function() {
+      const node = new Node({
+        used_resources: null
+      });
+
+      expect(node.getResources()).toEqual({
+        cpus: 0,
+        mem: 0,
+        gpus: 0,
+        disk: 0
+      });
+    });
+  });
+
+  describe("#isPublic", function() {
+    const testCases = [
+      {
+        name: "returns true if attributes.public_ip is true",
+        expected: true,
+        value: { attributes: { public_ip: "true" } }
+      },
+      {
+        name: "returns false if attributes.public_ip is false",
+        expected: false,
+        value: { attributes: { public_ip: "false" } }
+      },
+      {
+        name: "returns false if attributes.public_ip is missing",
+        expected: false,
+        value: { attributes: {} }
+      },
+      {
+        name: "returns false if attributes is missing",
+        expected: false,
+        value: {}
+      }
+    ];
+
+    testCases.forEach(function(test) {
+      it(test.name, function() {
+        const node = new Node(test.value);
+        expect(node.isPublic()).toEqual(test.expected);
+      });
+    });
+  });
 });

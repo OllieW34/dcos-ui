@@ -1,15 +1,6 @@
-import TestUtils from "react-addons-test-utils";
 import PropTypes from "prop-types";
 import React from "react";
-import ReactDOM from "react-dom";
 import { routerShape } from "react-router";
-
-const stores = {
-  CosmosPackagesStore: "../stores/CosmosPackagesStore",
-  MesosStateStore: "../stores/MesosStateStore",
-  MesosSummaryStore: "../stores/MesosSummaryStore",
-  MetadataStore: "../stores/MetadataStore"
-};
 
 // Private router stub
 const RouterStub = {
@@ -29,20 +20,6 @@ const defaultGetTimezoneOffset = Date.prototype.getTimezoneOffset;
 const defaultToLocaleString = Date.prototype.toLocaleString;
 
 const JestUtil = {
-  renderAndFindTag(instance, tag) {
-    var result = TestUtils.renderIntoDocument(instance);
-
-    return TestUtils.findRenderedDOMComponentWithTag(result, tag);
-  },
-
-  unMockStores(storeIDs) {
-    Object.keys(stores).forEach(function(storeID) {
-      if (storeIDs.indexOf(storeID) === -1) {
-        jest.setMock(stores[storeID], {});
-      }
-    });
-  },
-
   /**
    * Generates a callback function to a filter() call that will
    * keep only DOMElements matching the given tag name(s)
@@ -204,25 +181,6 @@ const JestUtil = {
 
       return strings;
     };
-  },
-
-  /**
-   * Helper to render component with stubbed router and getting original
-   * rendered component, not the WrappedComponent returned by stubRouterContext
-   * @param {React.Component} Component to render
-   * @param  {Object} [props] properties to pass to the component to render
-   * @param  {DOMElement} container element to render component into
-   * @param  {Object} [routerStubs]
-   * @return {React.Element} rendered into container
-   */
-  renderWithStubbedRouter(Component, props, container, routerStubs = {}) {
-    return TestUtils.findRenderedComponentWithType(
-      ReactDOM.render(
-        this.stubRouterContext(Component, props, routerStubs),
-        container
-      ),
-      Component
-    );
   },
 
   /**

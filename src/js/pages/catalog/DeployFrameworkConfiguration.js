@@ -2,13 +2,14 @@ import React from "react";
 import mixin from "reactjs-mixin";
 import PropTypes from "prop-types";
 import qs from "query-string";
-import deepEqual from "deep-equal";
+import isEqual from "lodash.isequal";
 import { StoreMixin } from "mesosphere-shared-reactjs";
 import { routerShape } from "react-router";
 import CosmosPackagesStore from "#SRC/js/stores/CosmosPackagesStore";
 import FrameworkConfiguration from "#SRC/js/components/FrameworkConfiguration";
 import Loader from "#SRC/js/components/Loader";
 import RequestErrorMsg from "#SRC/js/components/RequestErrorMsg";
+import Page from "#SRC/js/components/Page";
 import { getDefaultFormState } from "react-jsonschema-form/lib/utils";
 
 const METHODS_TO_BIND = [
@@ -71,7 +72,9 @@ class DeployFrameworkConfiguration extends mixin(StoreMixin) {
     });
 
     router.push(
-      `/catalog/packages/${encodeURIComponent(params.packageName)}?${qs.stringify(query)}`
+      `/catalog/packages/${encodeURIComponent(
+        params.packageName
+      )}?${qs.stringify(query)}`
     );
   }
 
@@ -93,7 +96,7 @@ class DeployFrameworkConfiguration extends mixin(StoreMixin) {
   }
 
   onFormDataChange(formData) {
-    if (deepEqual(formData, this.state.formData, { strict: true })) {
+    if (isEqual(formData, this.state.formData)) {
       return false;
     }
 
@@ -101,7 +104,7 @@ class DeployFrameworkConfiguration extends mixin(StoreMixin) {
   }
 
   onFormErrorChange(formErrors) {
-    if (deepEqual(formErrors, this.state.formErrors)) {
+    if (isEqual(formErrors, this.state.formErrors)) {
       return false;
     }
 
@@ -118,7 +121,11 @@ class DeployFrameworkConfiguration extends mixin(StoreMixin) {
     } = this.state;
 
     if (packageDetails == null) {
-      return <Loader className="vertical-center" />;
+      return (
+        <Page>
+          <Loader className="vertical-center" />
+        </Page>
+      );
     }
 
     if (hasError) {

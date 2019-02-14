@@ -8,13 +8,13 @@ results/
 build/
 npm-debug.log
 node_modules/
+src/js/config/Config.dev.ts
 src/js/config/Config.dev.js
 serve
 tmp/
 *.orig
 .plugins/
 .external_plugins/
-jest/config.json
 jest/test-results
 webpack/proxy.dev.js
 src/resources/raml

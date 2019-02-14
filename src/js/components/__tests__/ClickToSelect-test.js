@@ -1,41 +1,33 @@
-/* eslint-disable no-unused-vars */
-const React = require("react");
-/* eslint-enable no-unused-vars */
-const ReactDOM = require("react-dom");
-const TestUtils = require("react-addons-test-utils");
+import React from "react";
+import { mount } from "enzyme";
 
 const ClickToSelect = require("../ClickToSelect");
 
+let thisSpy, thisGetSelection, thisInstance;
+
 describe("ClickToSelect", function() {
   beforeEach(function() {
-    this.spy = { selectAllChildren: jasmine.createSpy() };
-    this.getSelection = global.document.getSelection;
+    thisSpy = { selectAllChildren: jasmine.createSpy() };
+    thisGetSelection = global.document.getSelection;
 
     // Mock this document function, which is unsupported by jest.
     global.document.getSelection = function() {
-      return this.spy;
-    }.bind(this);
+      return thisSpy;
+    };
 
-    this.container = global.document.createElement("div");
-    this.instance = ReactDOM.render(
+    thisInstance = mount(
       <ClickToSelect>
-        <span>hello text</span>
-      </ClickToSelect>,
-      this.container
+        <span className="foo">hello text</span>
+      </ClickToSelect>
     );
   });
 
   afterEach(function() {
-    ReactDOM.unmountComponentAtNode(this.container);
-    global.document.getSelection = this.getSelection;
+    global.document.getSelection = thisGetSelection;
   });
 
   it("sets selection when node is clicked", function() {
-    var node = ReactDOM.findDOMNode(this.instance);
-    var element = node.querySelector("span");
-
-    TestUtils.Simulate.click(element);
-
-    expect(this.spy.selectAllChildren).toHaveBeenCalled();
+    thisInstance.find(".foo").simulate("click");
+    expect(thisSpy.selectAllChildren).toHaveBeenCalled();
   });
 });

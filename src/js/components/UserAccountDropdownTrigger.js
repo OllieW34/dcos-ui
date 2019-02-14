@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import React from "react";
 import { StoreMixin } from "mesosphere-shared-reactjs";
 
-class UserAccountDropdownTrigger extends mixin(StoreMixin) {
+export default class UserAccountDropdownTrigger extends mixin(StoreMixin) {
   constructor() {
     super(...arguments);
 
@@ -23,52 +23,20 @@ class UserAccountDropdownTrigger extends mixin(StoreMixin) {
   }
 
   render() {
-    let { primaryContent, secondaryContent = null } = this.props;
-
-    // Promote secondary content to primary content in the event that secondary
-    // is the only available content.
-    if (!primaryContent && secondaryContent) {
-      primaryContent = secondaryContent;
-      secondaryContent = null;
-    } else if (secondaryContent) {
-      secondaryContent = (
-        <div className="header-subtitle">
-          {secondaryContent}
-        </div>
-      );
-    }
+    const { content, onTrigger } = this.props;
 
     return (
-      <header className="header" onClick={this.props.onTrigger}>
-        <a className="header-dropdown">
-          <div className="header-content">
-            <div className="header-image-wrapper">
-              <div className="header-image" />
-            </div>
-            <div className="header-details">
-              <span className="header-title">
-                <span>
-                  {primaryContent}
-                </span>
-              </span>
-              {secondaryContent}
-            </div>
-          </div>
-        </a>
-      </header>
+      <span className="header-bar-dropdown-trigger" onClick={onTrigger}>
+        <span className="header-bar-dropdown-trigger-content text-overflow">
+          {content}
+        </span>
+      </span>
     );
   }
 }
 
-UserAccountDropdownTrigger.defaultProps = {
-  showCaret: false,
-  onTrigger() {}
-};
-
 UserAccountDropdownTrigger.propTypes = {
-  clusterName: PropTypes.node,
+  content: PropTypes.string.isRequired,
   onUpdate: PropTypes.func,
-  showCaret: PropTypes.bool
+  onTrigger: PropTypes.func
 };
-
-module.exports = UserAccountDropdownTrigger;

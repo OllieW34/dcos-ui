@@ -20,7 +20,6 @@ var NodesGridDials = React.createClass({
     hosts: PropTypes.array.isRequired,
     selectedResource: PropTypes.string.isRequired,
     serviceColors: PropTypes.object.isRequired,
-    showServices: PropTypes.bool.isRequired,
     resourcesByFramework: PropTypes.object.isRequired
   },
 
@@ -47,7 +46,7 @@ var NodesGridDials = React.createClass({
         resourcesByFramework[frameworkID][props.selectedResource] || 0;
       const total = node.getUsageStats(props.selectedResource).total || 0;
 
-      const percentage = total === 0 ? 0 : used * 100 / total;
+      const percentage = total === 0 ? 0 : (used * 100) / total;
 
       config.push({
         colorIndex: props.serviceColors[frameworkID],
@@ -59,39 +58,8 @@ var NodesGridDials = React.createClass({
     return config;
   },
 
-  getUsedSliceConfig(node) {
-    const { selectedResource } = this.props;
-    const colorIndex = ResourcesUtil.getResourceColor(selectedResource);
-    const label = ResourcesUtil.getResourceLabel(selectedResource);
-    var serviceSlices = this.getServiceSlicesConfig(node);
-    var percentage;
-
-    if (serviceSlices.length > 0) {
-      percentage = serviceSlices.reduce(function(memo, slice) {
-        return memo + slice.percentage;
-      }, 0);
-    } else {
-      percentage = node.getUsageStats(selectedResource).percentage;
-    }
-
-    return [
-      {
-        colorIndex,
-        name: label,
-        percentage
-      }
-    ];
-  },
-
   getActiveSliceData(node) {
-    var config;
-    var props = this.props;
-
-    if (props.showServices) {
-      config = this.getServiceSlicesConfig(node);
-    } else {
-      config = this.getUsedSliceConfig(node);
-    }
+    var config = this.getServiceSlicesConfig(node);
 
     var percentage = config.reduce(function(memo, slice) {
       memo += slice.percentage;
@@ -155,11 +123,7 @@ var NodesGridDials = React.createClass({
   getDials() {
     return this.props.hosts.map(node => {
       var config = this.getDialConfig(node);
-      let description = (
-        <div className="description">
-          {config.description}
-        </div>
-      );
+      let description = <div className="description">{config.description}</div>;
 
       if (!node.isActive()) {
         description = (
@@ -197,9 +161,11 @@ var NodesGridDials = React.createClass({
   // Zero-height spacer items force dial charts in the last line of the flex layout
   // not to spread themselves across the line.
   getSpacers() {
-    return Array(30).fill().map(function(v, index) {
-      return <div className="nodes-grid-dials-spacer" key={index} />;
-    });
+    return Array(30)
+      .fill()
+      .map(function(v, index) {
+        return <div className="nodes-grid-dials-spacer" key={index} />;
+      });
   },
 
   render() {
