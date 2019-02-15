@@ -93,4 +93,16 @@ describe("DateUtil", function() {
       expect(DateUtil.strToMs(undefined)).toEqual(null);
     });
   });
+
+  describe("#isValidDate", function() {
+    it("return true for a valid date", function() {
+      expect(DateUtil.isValidDate("1990-01-03T00:00:00.000+0000")).toEqual(
+        true
+      );
+    });
+
+    it("return false for an invalid date", function() {
+      expect(DateUtil.isValidDate("foo")).toEqual(false);
+    });
+  });
 });
