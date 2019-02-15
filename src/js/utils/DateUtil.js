@@ -88,6 +88,12 @@ const DateUtil = {
 
   getDuration(time, formatKey = "seconds") {
     return moment.duration(time, formatKey).humanize();
+  },
+
+  isValidDate(dateString) {
+    const date = new Date(dateString);
+
+    return date instanceof Date && !isNaN(date);
   }
 };
 
