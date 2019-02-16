@@ -18,10 +18,6 @@ interface GeneralProps {
   formData: JobFormUIData;
   errors: FormError[];
   showErrors: boolean;
-  onInputChange: (
-    inputName: string,
-    jobOrSched?: "job" | "schedule"
-  ) => (event: any) => void;
 }
 
 function getFieldError(path: string, errors: FormError[]) {
@@ -43,7 +39,6 @@ class GeneralFormSection extends Component<GeneralProps, object> {
     const {
       formData: { job },
       showErrors,
-      onInputChange,
       errors
     } = this.props;
     const cpuTooltipContent =
@@ -78,12 +73,7 @@ class GeneralFormSection extends Component<GeneralProps, object> {
               </FormGroupHeadingContent>
             </FormGroupHeading>
           </FieldLabel>
-          <FieldInput
-            min="0.01"
-            name="cpus"
-            value={job.run.cpus}
-            onChange={onInputChange("run.cpus")}
-          />
+          <FieldInput min="0.01" name="job.run.cpus" value={job.run.cpus} />
           <FieldError>{cpusError}</FieldError>
         </FormGroup>
 
@@ -107,10 +97,9 @@ class GeneralFormSection extends Component<GeneralProps, object> {
           </FieldLabel>
           <FieldInput
             min="32"
-            name="mem"
+            name="job.run.mem"
             type="number"
             value={job.run.mem}
-            onChange={onInputChange("run.mem")}
           />
         </FormGroup>
 
@@ -134,10 +123,9 @@ class GeneralFormSection extends Component<GeneralProps, object> {
           </FieldLabel>
           <FieldInput
             min="32"
-            name="disk"
+            name="job.run.disk"
             type="number"
             value={job.run.disk}
-            onChange={onInputChange("run.disk")}
           />
         </FormGroup>
 
@@ -161,11 +149,10 @@ class GeneralFormSection extends Component<GeneralProps, object> {
           </FieldLabel>
           <FieldInput
             min="32"
-            name="gpus"
+            name="job.run.gpus"
             type="number"
             disabled={gpusDisabled}
             value={job.run.gpus}
-            onChange={onInputChange("run.gpus")}
           />
         </FormGroup>
       </FormRow>
@@ -173,7 +160,7 @@ class GeneralFormSection extends Component<GeneralProps, object> {
   }
 
   getJobType() {
-    const { formData, onInputChange, errors, showErrors } = this.props;
+    const { formData, errors, showErrors } = this.props;
     const cmdTooltipContent =
       "The command that is executed.  This value is wrapped by Mesos via `/bin/sh -c ${job.cmd}`.  Either `cmd` or `args` must be supplied. It is invalid to supply both `cmd` and `args` in the same job.";
     const containerImage =
@@ -202,7 +189,6 @@ class GeneralFormSection extends Component<GeneralProps, object> {
                 name="cmdOnly"
                 type="radio"
                 value={true}
-                onChange={onInputChange("cmdOnly")}
               />
               <Trans render="span">Command Only</Trans>
             </FieldLabel>
@@ -212,7 +198,6 @@ class GeneralFormSection extends Component<GeneralProps, object> {
                 name="cmdOnly"
                 type="radio"
                 value={false}
-                onChange={onInputChange("cmdOnly")}
               />
               <Trans render="span">Container Image</Trans>
             </FieldLabel>
@@ -253,7 +238,6 @@ class GeneralFormSection extends Component<GeneralProps, object> {
                   name="containerImage"
                   type="text"
                   value={containerImage}
-                  onChange={onInputChange("containerImage")}
                 />
               </FieldAutofocus>
               <FieldHelp>
@@ -286,10 +270,9 @@ class GeneralFormSection extends Component<GeneralProps, object> {
             </FieldLabel>
             <FieldAutofocus>
               <FieldInput
-                name="cmd"
+                name="job.run.cmd"
                 type="text"
                 value={formData.job.run.cmd}
-                onChange={onInputChange("run.cmd")}
               />
             </FieldAutofocus>
             <FieldHelp>
@@ -305,7 +288,7 @@ class GeneralFormSection extends Component<GeneralProps, object> {
   }
 
   render() {
-    const { formData, errors, showErrors, onInputChange } = this.props;
+    const { formData, errors, showErrors } = this.props;
 
     const idTooltipContent =
       "Unique identifier for the job consisting of a series of names separated by dots. Each name must be at least 1 character and may only contain digits (`0-9`), dashes (`-`), and lowercase letters (`a-z`). The name may not begin or end with a dash.";
@@ -337,12 +320,7 @@ class GeneralFormSection extends Component<GeneralProps, object> {
               </FormGroupHeading>
             </FieldLabel>
             <FieldAutofocus>
-              <FieldInput
-                onChange={onInputChange("id")}
-                name="id"
-                type="text"
-                value={formData.job.id}
-              />
+              <FieldInput name="job.id" type="text" value={formData.job.id} />
             </FieldAutofocus>
             <FieldError>{idError}</FieldError>
           </FormGroup>
@@ -368,8 +346,7 @@ class GeneralFormSection extends Component<GeneralProps, object> {
             </FieldLabel>
             <FieldAutofocus>
               <FieldInput
-                onChange={onInputChange("description")}
-                name="description"
+                name="formData.job.description"
                 type="text"
                 value={formData.job.description}
               />
